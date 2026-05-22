@@ -9079,6 +9079,7 @@ def _handle_chat_sync(handler, body):
                 session_id=s.session_id,
             )
             from api.streaming import (
+                _dedupe_replayed_context_messages,
                 _merge_display_messages_after_agent_result,
                 _restore_display_reasoning_metadata,
                 _restore_reasoning_metadata,
@@ -9128,6 +9129,10 @@ def _handle_chat_sync(handler, body):
         _next_context_messages = _restore_reasoning_metadata(
             _previous_context_messages,
             _result_messages,
+        )
+        _next_context_messages = _dedupe_replayed_context_messages(
+            _previous_context_messages,
+            _next_context_messages,
         )
         s.context_messages = _next_context_messages
         s.messages = _merge_display_messages_after_agent_result(
