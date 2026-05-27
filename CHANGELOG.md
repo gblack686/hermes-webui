@@ -3,6 +3,8 @@
 
 ## [Unreleased]
 
+## [v0.51.143] — 2026-05-26 — Release DO (stage-batch25 — single-PR workspace:// markdown scheme)
+
 ### Added
 
 - Chat markdown links using `workspace://path/to/file` now open the target in the workspace preview pane instead of navigating away from the WebUI. Renderable via both the settled `renderMd()` and live `streaming-markdown` paths. Workspace path existence is verified via `/api/list` before opening; missing files surface a `file_open_failed` status toast. (#2881, #2938)
