@@ -7727,6 +7727,11 @@ def handle_post(handler, parsed) -> bool:
         except Exception:
             logger.debug("Failed to resolve profile for deleted session %s", sid, exc_info=True)
             event_profile = None
+        # Active-profile boundary: a caller scoped to one profile must not be able
+        # to delete another profile's session (sidecar, journals, attachments, CLI
+        # rows). Resolve+check the profile before any destructive work below.
+        if not _session_visible_to_active_profile(event_profile, handler):
+            return bad(handler, "Session not found", status=404)
         # Delete from WebUI session store
         with LOCK:
             SESSIONS.pop(sid, None)
@@ -7799,6 +7804,8 @@ def handle_post(handler, parsed) -> bool:
         try:
             s = get_session(body["session_id"])
         except KeyError:
+            return bad(handler, "Session not found", 404)
+        if not _session_visible_to_active_profile(getattr(s, "profile", None), handler):
             return bad(handler, "Session not found", 404)
         sid = body["session_id"]
         with _get_session_agent_lock(sid):
@@ -7888,6 +7895,8 @@ def handle_post(handler, parsed) -> bool:
         try:
             source = get_session(body["session_id"])
         except KeyError:
+            return bad(handler, "Session not found", 404)
+        if not _session_visible_to_active_profile(getattr(source, "profile", None), handler):
             return bad(handler, "Session not found", 404)
 
         keep_count = body.get("keep_count")
@@ -7993,6 +8002,9 @@ def handle_post(handler, parsed) -> bool:
             return bad(handler, str(e))
         try:
             from api.session_ops import retry_last
+            _meta = get_session(body["session_id"], metadata_only=True)
+            if not _session_visible_to_active_profile(getattr(_meta, "profile", None), handler):
+                return bad(handler, "Session not found", 404)
             result = retry_last(body["session_id"])
             return j(handler, {"ok": True, **result})
         except KeyError:
@@ -8007,6 +8019,9 @@ def handle_post(handler, parsed) -> bool:
             return bad(handler, str(e))
         try:
             from api.session_ops import undo_last
+            _meta = get_session(body["session_id"], metadata_only=True)
+            if not _session_visible_to_active_profile(getattr(_meta, "profile", None), handler):
+                return bad(handler, "Session not found", 404)
             result = undo_last(body["session_id"])
             return j(handler, {"ok": True, **result})
         except KeyError:
@@ -14525,6 +14540,8 @@ def _handle_session_compress_start(handler, body):
         s = get_session(sid)
     except KeyError:
         return bad(handler, "Session not found", 404)
+    if not _session_visible_to_active_profile(getattr(s, "profile", None), handler):
+        return bad(handler, "Session not found", 404)
     if getattr(s, "active_stream_id", None):
         return bad(handler, "Session is still streaming; wait for the current turn to finish.", 409)
 
@@ -14661,6 +14678,9 @@ def _handle_session_compress(handler, body):
     try:
         s = get_session(sid)
     except KeyError:
+        return bad(handler, "Session not found", 404)
+
+    if not _session_visible_to_active_profile(getattr(s, "profile", None), handler):
         return bad(handler, "Session not found", 404)
 
     if getattr(s, "active_stream_id", None):
@@ -15130,6 +15150,14 @@ def _handle_handoff_summary(handler, body):
     sid = str(body.get("session_id") or "").strip()
     if not sid:
         return bad(handler, "session_id is required")
+
+    # Active-profile boundary: resolve the CLI session's profile and reject before
+    # counting rounds, reading the transcript, summarizing, or persisting a marker,
+    # so a caller scoped to one profile can't derive a summary from another
+    # profile's CLI transcript.
+    _handoff_meta = _lookup_cli_session_metadata(sid)
+    if not _session_visible_to_active_profile((_handoff_meta or {}).get("profile") or None, handler):
+        return bad(handler, "Session not found", 404)
 
     since = body.get("since")
     if since is not None:
@@ -15832,6 +15860,14 @@ def _handle_session_import_cli(handler, body):
                 "imported": False,
             },
         )
+
+    # Active-profile boundary: resolve the CLI session's profile and reject before
+    # reading the transcript, deriving a title, returning a read-only payload, or
+    # importing it — a caller scoped to one profile must not import/return another
+    # profile's CLI transcript.
+    _import_meta = _lookup_cli_session_metadata(sid)
+    if not _session_visible_to_active_profile((_import_meta or {}).get("profile") or None, handler):
+        return bad(handler, "Session not found", 404)
 
     # Fetch messages from CLI store
     msgs = get_cli_session_messages(sid)

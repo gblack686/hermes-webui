@@ -575,6 +575,211 @@ def test_session_import_cli_rejects_existing_sidecar_from_inactive_profile():
     assert "json" not in captured, "foreign-profile CLI sidecar must not be refreshed/returned"
 
 
+# ── Destructive + derive paths must also honor active profile (LX class sweep) ──
+#
+# delete / clear / branch / retry / undo / compress / handoff-summary / fresh
+# import_cli all loaded a session by id without the active-profile boundary, so a
+# caller scoped to one profile could DESTROY (delete/clear/truncate/retry/undo) or
+# derive-from (branch/compress/handoff/import) another profile's transcript by id.
+
+
+def _post_capture():
+    captured = {}
+
+    def fake_bad(_handler, message, status=400, **_kwargs):
+        captured["bad"] = {"message": message, "status": status}
+        return captured["bad"]
+
+    def fake_j(_handler, data, status=200, **_kwargs):
+        captured["json"] = {"data": data, "status": status}
+        return captured["json"]
+
+    return captured, fake_bad, fake_j
+
+
+def test_session_delete_rejects_session_from_inactive_profile():
+    """POST /api/session/delete must not delete a foreign-profile session."""
+    import api.routes as routes
+
+    captured, fake_bad, fake_j = _post_capture()
+    foreign = SimpleNamespace(profile="other")
+    parsed = urlparse("/api/session/delete")
+    body = {"session_id": "foreign_del_001"}
+    with patch("api.routes._get_active_profile_name", return_value="default"), \
+         patch("api.routes._check_csrf", return_value=True), \
+         patch("api.routes.read_body", return_value=body), \
+         patch("api.routes.is_safe_session_id", return_value=True), \
+         patch("api.routes._lookup_cli_session_metadata", return_value={}), \
+         patch("api.routes._is_messaging_session_id", return_value=False), \
+         patch("api.routes._worktree_retained_payload_for_session_id", return_value={}), \
+         patch("api.routes.get_session", return_value=foreign), \
+         patch("api.routes.bad", side_effect=fake_bad), \
+         patch("api.routes.j", side_effect=fake_j):
+        routes.handle_post(SimpleNamespace(headers={}), parsed)
+
+    assert captured.get("bad", {}).get("status") == 404
+    assert "json" not in captured, "foreign-profile session must not be deleted"
+
+
+def test_session_clear_rejects_session_from_inactive_profile():
+    """POST /api/session/clear must not wipe a foreign-profile transcript."""
+    import api.routes as routes
+
+    captured, fake_bad, fake_j = _post_capture()
+    foreign = SimpleNamespace(profile="other", messages=[{"role": "user", "content": "x"}], tool_calls=[])
+    parsed = urlparse("/api/session/clear")
+    body = {"session_id": "foreign_clr_001"}
+    with patch("api.routes._get_active_profile_name", return_value="default"), \
+         patch("api.routes._check_csrf", return_value=True), \
+         patch("api.routes.read_body", return_value=body), \
+         patch("api.routes.get_session", return_value=foreign), \
+         patch("api.routes.bad", side_effect=fake_bad), \
+         patch("api.routes.j", side_effect=fake_j):
+        routes.handle_post(SimpleNamespace(headers={}), parsed)
+
+    assert captured.get("bad", {}).get("status") == 404
+    assert foreign.messages == [{"role": "user", "content": "x"}], "transcript must not be wiped"
+    assert "json" not in captured
+
+
+def test_session_branch_rejects_session_from_inactive_profile():
+    """POST /api/session/branch must not fork a foreign-profile transcript."""
+    import api.routes as routes
+
+    captured, fake_bad, fake_j = _post_capture()
+    foreign = SimpleNamespace(profile="other", messages=[{"role": "user", "content": "x"}], title="F")
+    parsed = urlparse("/api/session/branch")
+    body = {"session_id": "foreign_br_001"}
+    with patch("api.routes._get_active_profile_name", return_value="default"), \
+         patch("api.routes._check_csrf", return_value=True), \
+         patch("api.routes.read_body", return_value=body), \
+         patch("api.routes.get_session", return_value=foreign), \
+         patch("api.routes.bad", side_effect=fake_bad), \
+         patch("api.routes.j", side_effect=fake_j):
+        routes.handle_post(SimpleNamespace(headers={}), parsed)
+
+    assert captured.get("bad", {}).get("status") == 404
+    assert "json" not in captured, "foreign-profile session must not be forked/returned"
+
+
+def test_session_retry_rejects_session_from_inactive_profile():
+    """POST /api/session/retry must not truncate/return a foreign-profile transcript."""
+    import api.routes as routes
+    import api.session_ops as session_ops
+
+    captured, fake_bad, fake_j = _post_capture()
+    meta = SimpleNamespace(profile="other")
+    parsed = urlparse("/api/session/retry")
+    body = {"session_id": "foreign_rt_001"}
+    called = {"retry": False}
+
+    def _retry(_sid):
+        called["retry"] = True
+        return {}
+
+    with patch("api.routes._get_active_profile_name", return_value="default"), \
+         patch("api.routes._check_csrf", return_value=True), \
+         patch("api.routes.read_body", return_value=body), \
+         patch("api.routes.get_session", return_value=meta), \
+         patch.object(session_ops, "retry_last", side_effect=_retry), \
+         patch("api.routes.bad", side_effect=fake_bad), \
+         patch("api.routes.j", side_effect=fake_j):
+        routes.handle_post(SimpleNamespace(headers={}), parsed)
+
+    assert captured.get("bad", {}).get("status") == 404
+    assert called["retry"] is False, "retry_last must not run for a foreign-profile session"
+
+
+def test_session_undo_rejects_session_from_inactive_profile():
+    """POST /api/session/undo must not truncate/return a foreign-profile transcript."""
+    import api.routes as routes
+    import api.session_ops as session_ops
+
+    captured, fake_bad, fake_j = _post_capture()
+    meta = SimpleNamespace(profile="other")
+    parsed = urlparse("/api/session/undo")
+    body = {"session_id": "foreign_un_001"}
+    called = {"undo": False}
+
+    def _undo(_sid):
+        called["undo"] = True
+        return {}
+
+    with patch("api.routes._get_active_profile_name", return_value="default"), \
+         patch("api.routes._check_csrf", return_value=True), \
+         patch("api.routes.read_body", return_value=body), \
+         patch("api.routes.get_session", return_value=meta), \
+         patch.object(session_ops, "undo_last", side_effect=_undo), \
+         patch("api.routes.bad", side_effect=fake_bad), \
+         patch("api.routes.j", side_effect=fake_j):
+        routes.handle_post(SimpleNamespace(headers={}), parsed)
+
+    assert captured.get("bad", {}).get("status") == 404
+    assert called["undo"] is False, "undo_last must not run for a foreign-profile session"
+
+
+def test_session_compress_rejects_session_from_inactive_profile():
+    """_handle_session_compress must not compress/return a foreign-profile transcript."""
+    import api.routes as routes
+
+    captured, fake_bad, fake_j = _post_capture()
+    foreign = SimpleNamespace(
+        profile="other", active_stream_id=None,
+        messages=[{"role": "user", "content": "x"}],
+    )
+    body = {"session_id": "foreign_cmp_001"}
+    with patch("api.routes._get_active_profile_name", return_value="default"), \
+         patch("api.routes.get_session", return_value=foreign), \
+         patch("api.routes.bad", side_effect=fake_bad), \
+         patch("api.routes.j", side_effect=fake_j):
+        routes._handle_session_compress(SimpleNamespace(headers={}), body)
+
+    assert captured.get("bad", {}).get("status") == 404
+    assert "json" not in captured, "foreign-profile transcript must not be compressed/returned"
+
+
+def test_session_handoff_summary_rejects_session_from_inactive_profile():
+    """_handle_handoff_summary must not summarize a foreign-profile CLI transcript."""
+    import api.routes as routes
+
+    captured, fake_bad, fake_j = _post_capture()
+    body = {"session_id": "foreign_ho_001"}
+    with patch("api.routes._get_active_profile_name", return_value="default"), \
+         patch("api.routes._lookup_cli_session_metadata", return_value={"profile": "other"}), \
+         patch("api.routes.bad", side_effect=fake_bad), \
+         patch("api.routes.j", side_effect=fake_j):
+        routes._handle_handoff_summary(SimpleNamespace(headers={}), body)
+
+    assert captured.get("bad", {}).get("status") == 404
+    assert "json" not in captured, "foreign-profile CLI transcript must not be summarized"
+
+
+def test_session_import_cli_fresh_rejects_session_from_inactive_profile():
+    """_handle_session_import_cli fresh (no-sidecar) branch must reject foreign profiles."""
+    import api.routes as routes
+
+    captured, fake_bad, fake_j = _post_capture()
+    body = {"session_id": "foreign_fresh_001"}
+    leaked = {"read": False}
+
+    def _get_cli_msgs(_sid):
+        leaked["read"] = True
+        return [{"role": "user", "content": "foreign profile secret"}]
+
+    with patch("api.routes._get_active_profile_name", return_value="default"), \
+         patch("api.routes.Session") as MockSession, \
+         patch("api.routes._lookup_cli_session_metadata", return_value={"profile": "other"}), \
+         patch("api.routes.get_cli_session_messages", side_effect=_get_cli_msgs), \
+         patch("api.routes.bad", side_effect=fake_bad), \
+         patch("api.routes.j", side_effect=fake_j):
+        MockSession.load.return_value = None  # no existing sidecar -> fresh branch
+        routes._handle_session_import_cli(SimpleNamespace(headers={}), body)
+
+    assert captured.get("bad", {}).get("status") == 404
+    assert leaked["read"] is False, "foreign-profile CLI transcript must not be read before the guard"
+    assert "json" not in captured
+
+
 # ── Cleanup ────────────────────────────────────────────────────────────────
 
 
