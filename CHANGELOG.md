@@ -3,6 +3,12 @@
 
 ## [Unreleased]
 
+## [v0.51.459] — 2026-06-16 — Release PT (your message stays your message)
+
+### Fixed
+
+- **Stale prior-turn text no longer contaminates the current user message (#4089).** When the agent's defensive role-sequence repair concatenated the previous context-tail user row with the freshly-submitted turn as `<stale>\n\n<current>`, that polluted pair was persisted into both the model context and the visible transcript — so a new message could render prefixed with an earlier one. A new detector recognizes exactly this repair shape (it requires the literal `\n\n` boundary and an exact tail/current match after workspace-sentinel stripping) and normalizes the affected row back to the clean current turn. Both the model-context merge and the visible-transcript merge funnel through one rule, and the normalization is scoped strictly to the new-turn slice — committed history rows are never rewritten. Thanks @starship-s.
+
 ## [v0.51.458] — 2026-06-16 — Release PS (long sessions stop hanging)
 
 ### Fixed
