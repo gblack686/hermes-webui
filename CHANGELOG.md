@@ -3,6 +3,12 @@
 
 ## [Unreleased]
 
+## [v0.51.468] — 2026-06-17 — Release QC (onboarding OAuth single-flight)
+
+### Security
+
+- **Onboarding OAuth start is now single-flight per provider/profile (#3972).** `POST /api/onboarding/oauth/start` runs background provider polling so the UI can detect completed CLI OAuth setup, and is reachable unauthenticated while first-run auth is being configured. Repeated start requests for the same provider/profile previously accumulated unbounded in-memory pending flows and daemon polling workers. The start path is now serialized under a per-`(provider, hermes_home)` lock across the full check → device-code request → flow insertion → worker spawn sequence, and the in-memory check-and-insert is paired atomically under the flows lock — so concurrent duplicate starts reuse the existing pending flow instead of racing a second device-code request or spawning a duplicate worker. Single (non-duplicate) start behavior is unchanged. Thanks @Hinotoi-agent.
+
 ## [v0.51.467] — 2026-06-16 — Release QB (symlinks in workspace file tree)
 
 ### Added
