@@ -1192,6 +1192,14 @@ async function loadSession(sid){
     return loadSession(continuationSid,{...opts,skipLineageResolve:true,skipContinuationResolve:true,force:true});
   }
   S.session=data.session;
+  if(typeof populateModelDropdown==='function'){
+    const modelRefreshSid=sid;
+    const modelRefreshPromise=Promise.resolve().then(()=>{
+      if(_loadingSessionId!==modelRefreshSid) return;
+      return populateModelDropdown({freshness:'session_visit'});
+    }).catch(()=>{});
+    if(typeof window!=='undefined') window._modelDropdownReady=modelRefreshPromise;
+  }
   // Loading a real existing session abandons any pre-session toolset override
   // staged on the empty composer — clear it so it can't leak into a later New
   // Chat started from this session (#4490 follow-up).
