@@ -3,6 +3,10 @@
 
 ## [Unreleased]
 
+### Changed
+
+- **Live Compact Worklog summaries can now be expanded or collapsed while a response is still streaming.** The `Processed …` row keeps its timer and now behaves like the settled Worklog disclosure, so users can hide noisy live work details without waiting for the final answer.
+
 ## [v0.51.608] — 2026-06-23 — Release VO (recycle DOM nodes during virtual-scroll re-renders)
 
 ### Changed

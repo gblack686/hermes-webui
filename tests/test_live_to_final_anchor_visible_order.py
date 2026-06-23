@@ -875,17 +875,20 @@ def test_legacy_settled_worklog_summary_uses_processed_anchor_too():
     assert ".tool-worklog-group[data-tool-worklog-group=\"1\"]:not([data-run-activity-group=\"1\"]) .tool-worklog-summary" in STYLE_CSS
 
 
-def test_live_processed_anchor_is_not_clickable_until_settled():
+def test_live_processed_anchor_is_clickable_while_streaming():
     toggle = _function_body(UI_JS, "_toggleActivityGroup")
     ensure = _function_body(UI_JS, "ensureActivityGroup")
     finalize = _function_body(UI_JS, "_finalizeLiveActivityDisclosureGroup")
     close = _function_body(UI_JS, "closeCurrentLiveActivityGroup")
 
-    assert "group.getAttribute('data-live-tool-call-group')==='1'&&group.getAttribute('data-live-activity-current')==='1'" in toggle
-    assert "return;" in toggle
-    assert "summary.setAttribute('data-live-summary-static','1')" in ensure
-    assert "summary.setAttribute('aria-disabled','true')" in ensure
-    assert "summary.disabled=true" in ensure
+    assert "data-live-activity-current')==='1'" not in toggle
+    assert "_writeActivityDisclosureState(group.getAttribute('data-activity-disclosure-key'), !collapsed);" in toggle
+    assert "_onLiveActivityToggle(group)" in toggle
+    assert "summary.setAttribute('data-live-summary-static','1')" not in ensure
+    assert "summary.setAttribute('aria-disabled','true')" not in ensure
+    assert "summary.disabled=true" not in ensure
+    assert "summary.removeAttribute('data-live-summary-static')" in ensure
+    assert "summary.removeAttribute('aria-disabled')" in ensure
     assert "summary.disabled=false" in ensure
     assert "group.removeAttribute('data-live-tool-call-group')" in finalize
     assert "group.removeAttribute('data-live-tool-worklog-group')" in finalize
@@ -896,8 +899,63 @@ def test_live_processed_anchor_is_not_clickable_until_settled():
     assert "summary.disabled=false" in finalize
     assert "summary.setAttribute('aria-expanded',keepOpen?'true':'false')" in finalize
     assert "_finalizeLiveActivityDisclosureGroup(group)" in close
-    assert ".tool-worklog-summary[data-live-summary-static=\"1\"]" in STYLE_CSS
-    assert ".tool-worklog-group[data-live-tool-call-group=\"1\"][data-live-activity-current=\"1\"] .tool-call-group-chevron" in STYLE_CSS
+    assert ".tool-worklog-summary[data-live-summary-static=\"1\"]" not in STYLE_CSS
+    assert ".tool-worklog-group[data-live-tool-call-group=\"1\"][data-live-activity-current=\"1\"] .tool-call-group-chevron" not in STYLE_CSS
+
+
+@pytest.mark.skipif(NODE is None, reason="node is required for live disclosure behavior tests")
+def test_live_processed_anchor_toggle_collapses_current_worklog_group():
+    script = f"""
+const assert = require('assert');
+let collapsed = false;
+let open = true;
+let wrote = null;
+let liveExpanded = null;
+function _writeActivityDisclosureState(key, value) {{ wrote = [key, value]; }}
+function _onLiveActivityToggle(group) {{ liveExpanded = !group.classList.contains('tool-call-group-collapsed'); }}
+const group = {{
+  attrs: {{
+    'data-live-tool-call-group': '1',
+    'data-live-activity-current': '1',
+    'data-activity-disclosure-key': 'live:stream-1'
+  }},
+  getAttribute(name) {{ return this.attrs[name] || ''; }},
+  classList: {{
+    toggle(name, force) {{
+      if (name === 'tool-call-group-collapsed') {{
+        collapsed = force === undefined ? !collapsed : !!force;
+        return collapsed;
+      }}
+      if (name === 'open') {{
+        open = force === undefined ? !open : !!force;
+        return open;
+      }}
+      throw new Error('unexpected class ' + name);
+    }},
+    contains(name) {{
+      if (name === 'tool-call-group-collapsed') return collapsed;
+      if (name === 'open') return open;
+      return false;
+    }}
+  }}
+}};
+const summary = {{
+  attrs: {{}},
+  closest(selector) {{ return group; }},
+  setAttribute(name, value) {{ this.attrs[name] = String(value); }}
+}};
+function _toggleActivityGroup(summary) {{
+{_function_body(UI_JS, "_toggleActivityGroup")}
+}}
+_toggleActivityGroup(summary);
+assert.strictEqual(collapsed, true);
+assert.strictEqual(open, false);
+assert.deepStrictEqual(wrote, ['live:stream-1', false]);
+assert.strictEqual(liveExpanded, false);
+assert.strictEqual(summary.attrs['aria-expanded'], 'false');
+    console.log(JSON.stringify({{ok:true}}));
+"""
+    _run_node_script(script)
 
 
 def test_pre_start_worklog_shell_shows_thinking_placeholder_immediately():

@@ -8988,9 +8988,6 @@ function _onLiveActivityToggle(group){
 function _toggleActivityGroup(summary){
   const group=summary&&summary.closest?summary.closest('.agent-activity-group,.tool-call-group'):null;
   if(!group) return;
-  if(group.getAttribute('data-live-tool-call-group')==='1'&&group.getAttribute('data-live-activity-current')==='1'){
-    return;
-  }
   const collapsed=group.classList.toggle('tool-call-group-collapsed');
   group.classList.toggle('open',!collapsed);
   summary.setAttribute('aria-expanded',String(!collapsed));
@@ -9951,15 +9948,9 @@ function ensureActivityGroup(inner, opts){
   if(opts.turnStartedAt!==undefined&&opts.turnStartedAt!==null) group.setAttribute('data-turn-started-at',String(opts.turnStartedAt));
   const summary=group.querySelector('.tool-worklog-summary,.tool-call-group-summary');
   if(summary){
-    if(live){
-      summary.setAttribute('data-live-summary-static','1');
-      summary.setAttribute('aria-disabled','true');
-      summary.disabled=true;
-    }else{
-      summary.removeAttribute('data-live-summary-static');
-      summary.removeAttribute('aria-disabled');
-      summary.disabled=false;
-    }
+    summary.removeAttribute('data-live-summary-static');
+    summary.removeAttribute('aria-disabled');
+    summary.disabled=false;
   }
   const anchor=opts.anchor||null;
   if(anchor&&anchor.parentElement===inner&&group.parentElement===inner){
