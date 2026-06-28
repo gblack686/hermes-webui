@@ -3580,11 +3580,35 @@ def _read_state_db_sidebar_overrides(db_path: Path, session_ids: set[str]) -> di
 
 
 def _apply_sidebar_state_db_overrides(sessions: list[dict]) -> None:
-    """Apply state.db source/title overrides without full lineage enrichment."""
+    """Apply state.db source/title overrides without full lineage enrichment.
+
+    Cap the state.db lookup to the top-N most recent sessions to bound
+    wall-clock on power users with thousands of sessions. This mirrors the
+    identical cap on _enrich_sidebar_lineage_metadata (#4638): the caller
+    passes an already pinned-first/newest-first sorted list, the sidebar
+    paints chronologically newest-first, and these source/title corrections
+    only matter for rows the user can actually see. The full scan on every
+    poll is the avoidable cost. Issue #5132 / 2026-06-28 triage:
+    /api/sessions blocked 5-18s in all_sessions.state_db_overrides reading
+    state.db for 2400+ rows on every concurrent poll, flapping the UI to
+    "Connection lost". The cap is env-configurable and fails open.
+
+    Rows beyond the cap keep their JSON source/title (lazily corrected when
+    the user opens the history panel), exactly as with the lineage cap.
+    """
+    import os as _os
+    try:
+        _cap = int(_os.environ.get("HERMES_WEBUI_STATE_DB_OVERRIDE_TOP_N", "300"))
+    except (TypeError, ValueError):
+        _cap = 300
+    if _cap > 0 and len(sessions) > _cap:
+        candidates = sessions[:_cap]
+    else:
+        candidates = sessions
     try:
         metadata = _read_state_db_sidebar_overrides(
             _active_state_db_path(),
-            {str(s.get('session_id')) for s in sessions if s.get('session_id')},
+            {str(s.get('session_id')) for s in candidates if s.get('session_id')},
         )
     except Exception:
         return
