@@ -15,7 +15,9 @@ from unittest.mock import MagicMock, patch
 def test_gateway_capability_detection():
     """get_gateway_caps / gateway_supports_approval correctly parse /v1/capabilities."""
     from api.config import (
+        gateway_approval_unavailable_reason,
         gateway_supports_approval,
+        get_gateway_caps,
         invalidate_gateway_caps,
     )
 
@@ -38,6 +40,10 @@ def test_gateway_capability_detection():
         return resp
 
     with patch("urllib.request.urlopen", side_effect=_fake_urlopen_capable):
+        caps = get_gateway_caps("http://fake:1234", "secret")
+        assert caps["capabilities_reachable"] is True
+        assert caps["probe_error"] is None
+        assert gateway_approval_unavailable_reason("http://fake:1234", "secret") is None
         assert gateway_supports_approval("http://fake:1234", "secret") is True
 
     invalidate_gateway_caps()
@@ -52,7 +58,36 @@ def test_gateway_capability_detection():
         return resp
 
     with patch("urllib.request.urlopen", side_effect=_fake_urlopen_incapable):
+        caps = get_gateway_caps("http://fake:5678")
+        assert caps["capabilities_reachable"] is True
+        assert caps["probe_error"] is None
+        assert gateway_approval_unavailable_reason("http://fake:5678") == "unsupported"
         assert gateway_supports_approval("http://fake:5678") is False
+
+    invalidate_gateway_caps()
+
+
+def test_gateway_capability_detection_marks_probe_failures_unreachable():
+    """Probe failures stay non-fatal but remain distinguishable from unsupported gateways."""
+    from api.config import (
+        gateway_approval_unavailable_reason,
+        gateway_supports_approval,
+        get_gateway_caps,
+        invalidate_gateway_caps,
+    )
+
+    invalidate_gateway_caps()
+
+    def _fake_urlopen_fail(req, *, timeout=None):
+        assert req.full_url == "http://fake:9999/v1/capabilities"
+        raise urllib.error.URLError("gateway unreachable")
+
+    with patch("urllib.request.urlopen", side_effect=_fake_urlopen_fail):
+        caps = get_gateway_caps("http://fake:9999", "secret")
+        assert caps["capabilities_reachable"] is False
+        assert caps["probe_error"]
+        assert gateway_approval_unavailable_reason("http://fake:9999", "secret") == "unreachable"
+        assert gateway_supports_approval("http://fake:9999", "secret") is False
 
     invalidate_gateway_caps()
 
