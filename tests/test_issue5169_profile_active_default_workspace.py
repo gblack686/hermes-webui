@@ -22,12 +22,8 @@ and the real filesystem resolution from a named profile's last_workspace.txt.
 
 from __future__ import annotations
 
-import os
 from types import SimpleNamespace
-from unittest import mock
 from urllib.parse import urlparse
-
-import pytest
 
 import api.profiles as profiles
 import api.routes as routes
