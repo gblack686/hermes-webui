@@ -4594,8 +4594,10 @@ main.main > #mainWorkspaces,
 main.main > #mainProfiles,
 main.main > #mainInsights,
 main.main > #mainLogs{display:none;}
-main.main:not(.showing-home):not(.showing-settings):not(.showing-skills):not(.showing-memory):not(.showing-tasks):not(.showing-kanban):not(.showing-workspaces):not(.showing-profiles):not(.showing-insights):not(.showing-logs):not(.showing-plugin):not(.showing-pluginhub) > #mainChat{display:flex;}
+main.main:not(.showing-home):not(.showing-overview):not(.showing-settings):not(.showing-skills):not(.showing-memory):not(.showing-tasks):not(.showing-kanban):not(.showing-workspaces):not(.showing-profiles):not(.showing-insights):not(.showing-logs):not(.showing-plugin):not(.showing-pluginhub) > #mainChat{display:flex;}
 main.main.showing-home > #mainHome{display:flex;overflow-y:auto;}
+main.main.showing-overview > #mainOverview{display:flex;overflow-y:auto;}
+main.main > #mainOverview{display:none;}
 main.main.showing-settings > #mainSettings{display:flex;overflow-y:auto;}
 main.main.showing-skills > #mainSkills{display:flex;}
 main.main.showing-memory > #mainMemory{display:flex;}
@@ -4669,6 +4671,70 @@ main.main.showing-pluginhub > #mainPluginhub{display:flex;overflow-y:auto;}
 .home-panel-links{display:flex;flex-direction:column;gap:8px;}
 .home-panel-link{text-align:left;padding:9px 12px;border:1px solid var(--border);border-radius:9px;background:var(--surface);color:var(--text);font-size:13px;font-weight:500;cursor:pointer;transition:background .15s,border-color .15s;}
 .home-panel-link:hover{background:var(--hover-bg);border-color:var(--accent);}
+
+/* ── GBAutomation Overview panel (plan B5) ── */
+/* Ported from 9119 gbhub-* classes, adapted to webui theme tokens. Brand
+   terracotta (#d97757) is the canonical GBAuto SOT hex and kept literal. */
+#mainOverview{flex-direction:column;}
+.gbhub-scroll{width:100%;max-width:1040px;margin:0 auto;padding:32px 24px 64px;}
+.gbhub-page{display:grid;width:100%;gap:16px;color:var(--text);}
+.gbhub-hero,
+.gbhub-stat-card,
+.gbhub-spoke-card,
+.gbhub-activity-panel,
+.gbhub-dag-strip{border:1px solid var(--border);border-radius:8px;background:var(--surface);box-shadow:0 1px 2px rgba(0,0,0,.04);}
+.gbhub-hero{position:relative;padding:18px;}
+.gbhub-brand-row{display:inline-flex;align-items:center;gap:9px;color:var(--text);font-family:var(--font-ui);font-size:17px;font-weight:600;}
+.gbhub-mark{display:inline-grid;place-items:center;width:38px;height:38px;border-radius:999px;background:linear-gradient(135deg,#d97757 0%,#b85a3e 100%);color:#fff;font-weight:700;font-style:italic;}
+.gbhub-badge{position:absolute;top:16px;right:16px;display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:999px;border:1px solid var(--border);background:var(--input-bg);color:var(--muted);font-size:11px;font-weight:600;}
+.gbhub-hero h2{margin:18px 0 8px;color:var(--text);font-family:var(--font-ui);font-size:clamp(26px,4vw,40px);font-weight:700;line-height:1.05;}
+.gbhub-hero p{max-width:60ch;margin:0;color:var(--muted);font-size:13.5px;line-height:1.55;}
+.gbhub-tenant{display:block;margin-top:10px;color:var(--muted);font-size:11.5px;}
+.gbhub-tenant strong{color:var(--text);}
+.gbhub-stat-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;}
+.gbhub-stat-card{display:grid;min-height:110px;align-content:start;gap:4px;padding:16px;text-align:left;cursor:pointer;font:inherit;transition:border-color .16s ease,box-shadow .16s ease,transform .16s ease;}
+.gbhub-stat-card--static{cursor:default;}
+.gbhub-stat-card:not(.gbhub-stat-card--static):hover,
+.gbhub-spoke-card:not(.gbhub-spoke-card--static):hover{transform:translateY(-1px);border-color:rgba(217,119,87,.42);box-shadow:0 10px 30px -18px rgba(0,0,0,.5);}
+.gbhub-stat-card strong{color:var(--text);font-family:var(--font-ui);font-size:30px;font-weight:700;line-height:1;}
+.gbhub-stat-card span{font-size:12px;font-weight:700;letter-spacing:.04em;}
+.gbhub-stat-card small,
+.gbhub-spoke-card small,
+.gbhub-muted{color:var(--muted);font-size:12px;line-height:1.45;}
+.gbhub-two-column{display:grid;grid-template-columns:minmax(0,1fr) minmax(280px,340px);gap:16px;align-items:start;}
+.gbhub-eyebrow{margin:0 0 10px;color:#d97757;font-size:11px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;}
+.gbhub-spoke-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;}
+.gbhub-spoke-card{display:grid;grid-template-columns:32px minmax(0,1fr);gap:12px;min-height:84px;padding:16px;text-align:left;cursor:pointer;font:inherit;color:var(--text);}
+.gbhub-spoke-card--static{cursor:default;opacity:.78;}
+.gbhub-spoke-icon{display:inline-grid;place-items:center;width:32px;height:32px;border:1px solid rgba(217,119,87,.38);border-radius:999px;color:#d97757;}
+.gbhub-spoke-card strong{display:block;color:var(--text);font-family:var(--font-ui);font-size:16px;font-weight:600;line-height:1.1;}
+.gbhub-spoke-card small{display:block;margin-top:4px;}
+.gbhub-soon{margin-top:6px;font-size:10.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);}
+.gbhub-activity-panel{position:sticky;top:16px;padding:16px;}
+.gbhub-activity-panel ul{display:grid;gap:10px;margin:0;padding:0;list-style:none;}
+.gbhub-activity-panel li div{display:flex;align-items:center;gap:7px;min-width:0;color:var(--muted);font-size:11.5px;}
+.gbhub-activity-panel li div span:nth-child(2){overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.gbhub-activity-panel time{margin-left:auto;white-space:nowrap;color:var(--muted);}
+.gbhub-client-dot{flex-shrink:0;width:7px;height:7px;border-radius:999px;}
+.gbhub-activity-panel li p{margin:3px 0 0 14px;color:var(--text);font-size:12px;line-height:1.35;}
+.gbhub-dag-strip{padding:16px;}
+.gbhub-dag-strip > div{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;}
+.gbhub-dag-strip article{display:grid;gap:5px;border:1px solid var(--border);border-radius:8px;background:var(--input-bg);color:var(--text);padding:14px;}
+.gbhub-dag-strip article svg{color:#d97757;}
+.gbhub-dag-strip article strong{font-size:13px;line-height:1.25;}
+.gbhub-dag-strip article span{color:var(--muted);font-size:11.5px;}
+@media (max-width:1024px){
+  .gbhub-stat-grid,
+  .gbhub-dag-strip > div{grid-template-columns:repeat(2,minmax(0,1fr));}
+  .gbhub-two-column{grid-template-columns:1fr;}
+  .gbhub-activity-panel{position:static;}
+}
+@media (max-width:640px){
+  .gbhub-stat-grid,
+  .gbhub-spoke-grid,
+  .gbhub-dag-strip > div{grid-template-columns:1fr;}
+  .gbhub-badge{position:static;margin-top:12px;}
+}
 
 /* Sidebar menu (lives in the left sidebar under the cog panel) */
 .panel-view#panelSettings{gap:0;padding:0;}

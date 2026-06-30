@@ -1,0 +1,18 @@
+{
+  "_meta": {
+    "kind": "gbauto-dags-manifest",
+    "schema_version": 1,
+    "tenant": "gbautomation",
+    "client_slug": "gbautomation",
+    "pii_safe": true,
+    "aggregate_only": true,
+    "generated_at": "2026-06-30T00:00:00Z",
+    "source": "SAMPLE FIXTURE -- regenerate via nightly_artifact_diff.py into HERMES_SNAPSHOT_ROOT (/observability/dags/)"
+  },
+  "dags": [
+    {"slug": "tac-team-runner", "title": "TAC Team Runner", "date": "2026-06-29", "agent_count": 7, "node_count": 22},
+    {"slug": "feedback-triage", "title": "Feedback Triage Pipeline", "date": "2026-06-28", "agent_count": 4, "node_count": 11},
+    {"slug": "ecom-hourly-lane", "title": "Ecom Hourly Lane", "date": "2026-06-27", "agent_count": 3, "node_count": 9}
+  ],
+  "totals": {"dags": 3}
+}
