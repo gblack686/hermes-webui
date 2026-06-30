@@ -10217,6 +10217,76 @@ def _handle_agent_config_raw_put(handler, parsed, body) -> bool:
         return bad(handler, f"agent-config save failed: {exc}", status=500)
 
 
+# ── Keys/Env tab (B3) — env-var reveal/set/delete ──────────────────────────
+# Ported from 9119's /api/env family. The reveal path is re-gated on WebUI's
+# OWN auth (_sankey_auth_ok) + an in-process rate limiter; we do NOT port
+# 9119's ephemeral bearer-token scheme. set/remove/reveal are restricted to
+# keys in api.env_vars.OPTIONAL_ENV_VARS (anti-injection / PII safety).
+
+
+def _handle_env_get(handler, parsed) -> bool:
+    """GET /api/env — full catalog with is_set + redacted previews (no secrets)."""
+    from api import env_vars
+    try:
+        return j(handler, env_vars.get_env_vars()) or True
+    except Exception as exc:
+        logger.warning("env list failed: %s", exc)
+        return bad(handler, f"env list failed: {exc}", status=500)
+
+
+def _handle_env_set(handler, parsed, body) -> bool:
+    """POST /api/env/set — write key=value (auth-gated, catalog keys only)."""
+    if not _sankey_auth_ok(handler):
+        return bad(handler, "Authentication required", status=401)
+    from api import env_vars
+    key = (body.get("key") or "").strip() if isinstance(body, dict) else ""
+    value = body.get("value") if isinstance(body, dict) else None
+    if not key:
+        return bad(handler, "key is required")
+    result = env_vars.set_env_var(key, value)
+    if not result.get("ok"):
+        return bad(handler, result.get("error", "Unknown error"),
+                   status=result.get("status", 400))
+    return j(handler, result) or True
+
+
+def _handle_env_remove(handler, parsed, body) -> bool:
+    """POST /api/env/remove — delete key (auth-gated, catalog keys only)."""
+    if not _sankey_auth_ok(handler):
+        return bad(handler, "Authentication required", status=401)
+    from api import env_vars
+    key = (body.get("key") or "").strip() if isinstance(body, dict) else ""
+    if not key:
+        return bad(handler, "key is required")
+    result = env_vars.remove_env_var(key)
+    if not result.get("ok"):
+        return bad(handler, result.get("error", "Unknown error"),
+                   status=result.get("status", 400))
+    return j(handler, result) or True
+
+
+def _handle_env_reveal(handler, parsed, body) -> bool:
+    """POST /api/env/reveal — return the real value of one catalog key.
+
+    Gated on WebUI's own auth + rate-limited (max 5 / 30s). Audit-logged.
+    """
+    if not _sankey_auth_ok(handler):
+        return bad(handler, "Authentication required", status=401)
+    from api import env_vars
+    if not env_vars._reveal_allowed():
+        return bad(handler, "Too many reveal requests. Try again shortly.",
+                   status=429)
+    key = (body.get("key") or "").strip() if isinstance(body, dict) else ""
+    if not key:
+        return bad(handler, "key is required")
+    result = env_vars.reveal_env_var(key)
+    if not result.get("ok"):
+        return bad(handler, result.get("error", "Unknown error"),
+                   status=result.get("status", 400))
+    logger.info("env/reveal: %s", key)
+    return j(handler, result) or True
+
+
 def handle_get(handler, parsed) -> bool:
     """Handle all GET routes. Returns True if handled, False for 404."""
 
@@ -10393,6 +10463,8 @@ def handle_get(handler, parsed) -> bool:
         return _handle_agent_config_defaults(handler, parsed)
     if parsed.path == "/api/agent-config/raw":
         return _handle_agent_config_raw_get(handler, parsed)
+    if parsed.path == "/api/env":
+        return _handle_env_get(handler, parsed)
     if parsed.path == "/api/wiki/status":
         return _handle_llm_wiki_status(handler, parsed)
     if parsed.path == "/api/wiki/browse":
@@ -14192,6 +14264,14 @@ def handle_post(handler, parsed) -> bool:
         except Exception as e:
             logger.exception("rollback/restore failed")
             return bad(handler, str(e), status=500)
+
+    # ── Keys/Env tab (B3) ──
+    if parsed.path == "/api/env/set":
+        return _handle_env_set(handler, parsed, body)
+    if parsed.path == "/api/env/remove":
+        return _handle_env_remove(handler, parsed, body)
+    if parsed.path == "/api/env/reveal":
+        return _handle_env_reveal(handler, parsed, body)
 
     return False  # 404
 
