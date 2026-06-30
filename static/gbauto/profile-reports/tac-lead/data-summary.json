@@ -1,0 +1,31 @@
+{
+  "source": "C:\\Users\\gblac\\OneDrive\\Desktop\\gbauto\\gbautomation-main-artifacts-view\\second-brain\\intelligence\\artifact-registry\\gbautomation\\tac-lead-profile-artifacts-2026-06-13",
+  "usage": {
+    "sessions": 28,
+    "messages": 3088,
+    "tool_calls": 1642,
+    "api_calls": 935,
+    "input_tokens": 4901559,
+    "output_tokens": 306057,
+    "cache_read_tokens": 82077696,
+    "first_seen": "2026-06-10 21:14",
+    "last_seen": "2026-06-13 15:08"
+  },
+  "weekly_langfuse_rankings": {
+    "agent_trace_rank": [
+      13,
+      13,
+      0
+    ],
+    "agent_token_rank": [
+      10,
+      13,
+      25
+    ],
+    "agent_skill_pair_rank": [
+      14,
+      14,
+      0
+    ]
+  }
+}
