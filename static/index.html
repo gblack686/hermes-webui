@@ -153,6 +153,7 @@
   <nav class="rail" aria-label="Primary navigation">
     <button class="rail-btn nav-tab has-tooltip" data-panel="home" onclick="switchPanel('home',{fromRailClick:true})" data-tooltip="Home" aria-label="Home"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V21h14V9.5"/><path d="M9 21v-6h6v6"/></svg></button>
     <button class="rail-btn nav-tab has-tooltip" data-panel="overview" onclick="switchPanel('overview',{fromRailClick:true})" data-tooltip="Overview" aria-label="GBAutomation Overview"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M12 2v3"/><path d="M12 19v3"/><path d="m4.9 4.9 2.1 2.1"/><path d="m17 17 2.1 2.1"/><path d="M2 12h3"/><path d="M19 12h3"/><path d="m4.9 19.1 2.1-2.1"/><path d="m17 7 2.1-2.1"/></svg></button>
+    <button class="rail-btn nav-tab has-tooltip" data-panel="repos" onclick="switchPanel('repos',{fromRailClick:true})" data-tooltip="Repos" aria-label="GBAutomation Repos"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="6" y1="3" x2="6" y2="15"/><circle cx="18" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M18 9a9 9 0 0 1-9 9"/></svg></button>
     <button class="rail-btn nav-tab active has-tooltip" data-panel="chat" onclick="switchPanel('chat',{fromRailClick:true})" data-tooltip="Chat" data-i18n-title="tab_chat" aria-label="Chat"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></button>
     <button class="rail-btn nav-tab has-tooltip" data-panel="tasks" onclick="switchPanel('tasks',{fromRailClick:true})" data-tooltip="Tasks" data-i18n-title="tab_tasks" aria-label="Tasks"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></button>
     <button class="rail-btn nav-tab has-tooltip" data-panel="kanban" onclick="switchPanel('kanban',{fromRailClick:true})" data-tooltip="Kanban" data-i18n-title="tab_kanban" aria-label="Kanban"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M8 4v16"/><path d="M16 4v16"/><path d="M3 10h18"/></svg></button>
@@ -175,6 +176,7 @@
     <div class="sidebar-nav">
       <button class="nav-tab has-tooltip has-tooltip--bottom" data-panel="home" data-label="Home" onclick="switchPanel('home',{fromRailClick:true})" data-tooltip="Home"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V21h14V9.5"/><path d="M9 21v-6h6v6"/></svg></button>
       <button class="nav-tab has-tooltip has-tooltip--bottom" data-panel="overview" data-label="Overview" onclick="switchPanel('overview',{fromRailClick:true})" data-tooltip="Overview"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M12 2v3"/><path d="M12 19v3"/><path d="m4.9 4.9 2.1 2.1"/><path d="m17 17 2.1 2.1"/><path d="M2 12h3"/><path d="M19 12h3"/><path d="m4.9 19.1 2.1-2.1"/><path d="m17 7 2.1-2.1"/></svg></button>
+      <button class="nav-tab has-tooltip has-tooltip--bottom" data-panel="repos" data-label="Repos" onclick="switchPanel('repos',{fromRailClick:true})" data-tooltip="Repos"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="6" y1="3" x2="6" y2="15"/><circle cx="18" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M18 9a9 9 0 0 1-9 9"/></svg></button>
       <button class="nav-tab active has-tooltip has-tooltip--bottom" data-panel="chat" data-label="Chat" onclick="switchPanel('chat',{fromRailClick:true})" data-tooltip="Chat" data-i18n-title="tab_chat"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></button>
       <button class="nav-tab has-tooltip has-tooltip--bottom" data-panel="tasks" data-label="Tasks" onclick="switchPanel('tasks',{fromRailClick:true})" data-tooltip="Tasks" data-i18n-title="tab_tasks"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></button>
       <button class="nav-tab has-tooltip has-tooltip--bottom" data-panel="kanban" data-label="Kanban" onclick="switchPanel('kanban',{fromRailClick:true})" data-tooltip="Kanban" data-i18n-title="tab_kanban"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M8 4v16"/><path d="M16 4v16"/><path d="M3 10h18"/></svg></button>
@@ -223,6 +225,20 @@
           <button type="button" class="home-panel-link" onclick="switchPanel('pluginhub')"><span>Apps &amp; Plugins</span></button>
           <button type="button" class="home-panel-link" onclick="switchPanel('insights')"><span>Insights</span></button>
           <button type="button" class="home-panel-link" onclick="switchPanel('kanban')"><span>Kanban</span></button>
+        </div>
+      </div>
+    </div>
+    <!-- GBAutomation Repos panel (plan B6) -->
+    <div class="panel-view" id="panelRepos">
+      <div class="panel-head">
+        <span>Repos</span>
+      </div>
+      <div class="home-panel-body">
+        <p class="home-panel-lede">TAC repo catalog &mdash; card grid, commit activity, and search.</p>
+        <div class="home-panel-links">
+          <button type="button" class="home-panel-link" onclick="switchPanel('overview')"><span>Overview</span></button>
+          <button type="button" class="home-panel-link" onclick="switchPanel('logs')"><span>Observability</span></button>
+          <button type="button" class="home-panel-link" onclick="loadRepos(true)"><span>Refresh manifest</span></button>
         </div>
       </div>
     </div>
@@ -497,6 +513,14 @@
       <div class="gbhub-scroll">
         <div class="gbhub-page normal-case" id="overviewContent">
           <p class="gbhub-muted">Loading overview...</p>
+        </div>
+      </div>
+    </div>
+    <!-- GBAutomation Repos main view (plan B6). Rendered by loadRepos() in panels.js. -->
+    <div id="mainRepos" class="main-view">
+      <div class="gbhub-scroll">
+        <div class="gbhub-page normal-case" id="reposContent">
+          <p class="gbhub-muted">Loading repos...</p>
         </div>
       </div>
     </div>
