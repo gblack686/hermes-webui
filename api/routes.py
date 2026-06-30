@@ -10092,6 +10092,49 @@ def _handle_sankey_chart(handler, parsed) -> bool:
     return True
 
 
+def _handle_gbauto_supabase_health(handler, parsed) -> bool:
+    """GET /api/gbauto/supabase-health — tenant-scoped Supabase data health (B9a).
+
+    Aggregate-only (row/bad-row counts + latest ts per relation), gated on
+    webui's OWN auth. Degrades to an empty payload (available=False) on the PC
+    where the gbauto-supabase CLI is absent -- the panel falls back to the
+    committed snapshot fixture. Live health is Mini-only (mini_pending)."""
+    if not _sankey_auth_ok(handler):
+        return bad(handler, "Authentication required", status=401)
+    from api import supabase_health
+
+    qs = parse_qs(parsed.query or "")
+    tenant = (qs.get("tenant", [""])[0] or "gbautomation").strip().lower()
+    try:
+        return j(handler, supabase_health.get_supabase_health(tenant)) or True
+    except Exception as exc:  # never crash the worker on a health read
+        logger.warning("gbauto supabase-health failed: %s", exc)
+        return bad(handler, f"supabase-health failed: {exc}", status=500)
+
+
+def _handle_gbauto_langfuse(handler, parsed) -> bool:
+    """GET /api/gbauto/langfuse — sanitized Langfuse trace metadata (B9b).
+
+    Wraps hermes_cli.gbauto_supabase_logs.get_traces (kanban_bridge precedent),
+    gated on webui's OWN auth. Degrades to an empty payload (available=False) on
+    the PC where hermes_cli cannot import -- the panel falls back to the snapshot
+    fixture's langfuse_traces table. Live traces are Mini-only (mini_pending)."""
+    if not _sankey_auth_ok(handler):
+        return bad(handler, "Authentication required", status=401)
+    from api import langfuse_bridge
+
+    qs = parse_qs(parsed.query or "")
+    tenant = (qs.get("tenant", [""])[0] or "gbautomation").strip().lower()
+    days = (qs.get("days", [""])[0] or "").strip() or 7
+    limit = (qs.get("limit", [""])[0] or "").strip() or 100
+    search = (qs.get("search", [""])[0] or "").strip() or None
+    try:
+        return j(handler, langfuse_bridge.get_langfuse(tenant, days=days, limit=limit, search=search)) or True
+    except Exception as exc:  # never crash the worker on a trace read
+        logger.warning("gbauto langfuse failed: %s", exc)
+        return bad(handler, f"langfuse failed: {exc}", status=500)
+
+
 def handle_get(handler, parsed) -> bool:
     """Handle all GET routes. Returns True if handled, False for 404."""
 
@@ -10252,6 +10295,10 @@ def handle_get(handler, parsed) -> bool:
         if result is False:
             return _kanban_unknown_endpoint(handler, parsed, "GET")
         return True
+    if parsed.path == "/api/gbauto/supabase-health":
+        return _handle_gbauto_supabase_health(handler, parsed)
+    if parsed.path == "/api/gbauto/langfuse":
+        return _handle_gbauto_langfuse(handler, parsed)
     if parsed.path == "/api/plugins/sankey-explorer/tables":
         return _handle_sankey_tables(handler, parsed)
     if parsed.path == "/api/plugins/sankey-explorer/chart":
