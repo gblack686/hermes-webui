@@ -1,0 +1,16 @@
+{
+  "rows": [
+    {"client": "the-mall-app", "status": "shipped", "kind": "feature", "prd_type": "build", "priority": "P1", "tac_status": "accepted", "agent_team": "ECOM"},
+    {"client": "the-mall-app", "status": "shipped", "kind": "feature", "prd_type": "build", "priority": "P2", "tac_status": "accepted", "agent_team": "ECOM"},
+    {"client": "the-mall-app", "status": "in_progress", "kind": "bugfix", "prd_type": "build", "priority": "P1", "tac_status": "proposed", "agent_team": "ECOM"},
+    {"client": "smoke-client", "status": "shipped", "kind": "feature", "prd_type": "plan", "priority": "P1", "tac_status": "accepted", "agent_team": "PLATFORM"},
+    {"client": "smoke-client", "status": "proposed", "kind": "infra", "prd_type": "plan", "priority": "P2", "tac_status": "proposed", "agent_team": "PLATFORM"},
+    {"client": "smoke-client", "status": "shipped", "kind": "feature", "prd_type": "build", "priority": "P3", "tac_status": "accepted", "agent_team": "PLATFORM"},
+    {"client": "adjust-ai", "status": "proposed", "kind": "feature", "prd_type": "plan", "priority": "P2", "tac_status": "proposed", "agent_team": "PLATFORM"},
+    {"client": "adjust-ai", "status": "in_progress", "kind": "infra", "prd_type": "build", "priority": "P1", "tac_status": "accepted", "agent_team": "PLATFORM"},
+    {"client": "gbautomation", "status": "shipped", "kind": "infra", "prd_type": "build", "priority": "P0", "tac_status": "accepted", "agent_team": "PLATFORM"},
+    {"client": "gbautomation", "status": "shipped", "kind": "feature", "prd_type": "build", "priority": "P1", "tac_status": "accepted", "agent_team": "PLATFORM"},
+    {"client": "gbautomation", "status": "in_progress", "kind": "feature", "prd_type": "plan", "priority": "P2", "tac_status": "proposed", "agent_team": "DATAVIZ"},
+    {"client": "jid5274", "status": "shipped", "kind": "feature", "prd_type": "build", "priority": "P1", "tac_status": "accepted", "agent_team": "WEBSITE"}
+  ]
+}

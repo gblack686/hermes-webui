@@ -9978,6 +9978,78 @@ def _render_index_shell_base() -> str:
     return base
 
 
+def _sankey_auth_ok(handler) -> bool:
+    """Gate the sankey-explorer endpoints on WebUI's OWN auth (api/auth.py).
+
+    When auth is disabled (the default for localhost smoke) every request is
+    allowed; when a password/passkey is configured, a valid WebUI session cookie
+    is required. We do NOT port 9119's bearer-token scheme.
+    """
+    from api.auth import is_auth_enabled, parse_cookie, verify_session
+
+    if not is_auth_enabled():
+        return True
+    cookie_val = parse_cookie(handler)
+    return bool(cookie_val and verify_session(cookie_val))
+
+
+def _handle_sankey_tables(handler, parsed) -> bool:
+    """GET /api/plugins/sankey-explorer/tables — PII-safe catalog (metadata only)."""
+    if not _sankey_auth_ok(handler):
+        return bad(handler, "Authentication required", status=401)
+    from api import sankey_explorer
+    try:
+        return j(handler, sankey_explorer.tables_payload()) or True
+    except sankey_explorer.SankeyError as exc:
+        return bad(handler, str(exc), status=getattr(exc, "status", 400))
+    except Exception as exc:  # never crash the worker on a catalog read
+        logger.warning("sankey-explorer tables failed: %s", exc)
+        return bad(handler, f"tables failed: {exc}", status=500)
+
+
+def _handle_sankey_chart(handler, parsed) -> bool:
+    """GET /api/plugins/sankey-explorer/chart — self-contained 3D-Sankey HTML.
+
+    Served with a sandbox CSP and no X-Frame-Options so the plugin page can
+    embed it in an <iframe> (the shared j()/t() helpers force X-Frame-Options
+    DENY, which would block same-origin framing)."""
+    if not _sankey_auth_ok(handler):
+        return bad(handler, "Authentication required", status=401)
+    from api import sankey_explorer
+
+    qs = parse_qs(parsed.query or "")
+    table = (qs.get("table", [""])[0] or "").strip()
+    dims = (qs.get("dims", [""])[0] or "").strip()
+    weight = (qs.get("weight", [""])[0] or "").strip() or None
+    if not table or not dims:
+        return bad(handler, "table and dims are required", status=400)
+
+    try:
+        html_doc = sankey_explorer.chart_html(table, dims, weight)
+    except sankey_explorer.SankeyError as exc:
+        return bad(handler, str(exc), status=getattr(exc, "status", 400))
+    except Exception as exc:  # CLI missing / DNS / parse — surface as 500
+        logger.warning("sankey-explorer chart failed: %s", exc)
+        return bad(handler, f"chart failed: {exc}", status=500)
+
+    body = html_doc.encode("utf-8")
+    handler.send_response(200)
+    handler.send_header("Content-Type", "text/html; charset=utf-8")
+    handler.send_header("Content-Length", str(len(body)))
+    handler.send_header("Cache-Control", "no-store")
+    handler.send_header("X-Content-Type-Options", "nosniff")
+    # Sandbox the chart document (matches the plugin-static asset route) so its
+    # inline three.js runs isolated; intentionally NO X-Frame-Options so the
+    # same-origin plugin page can frame it.
+    handler.send_header("Content-Security-Policy", "sandbox allow-scripts")
+    handler.end_headers()
+    try:
+        handler.wfile.write(body)
+    except (BrokenPipeError, ConnectionResetError):
+        pass
+    return True
+
+
 def handle_get(handler, parsed) -> bool:
     """Handle all GET routes. Returns True if handled, False for 404."""
 
@@ -10138,6 +10210,10 @@ def handle_get(handler, parsed) -> bool:
         if result is False:
             return _kanban_unknown_endpoint(handler, parsed, "GET")
         return True
+    if parsed.path == "/api/plugins/sankey-explorer/tables":
+        return _handle_sankey_tables(handler, parsed)
+    if parsed.path == "/api/plugins/sankey-explorer/chart":
+        return _handle_sankey_chart(handler, parsed)
     if parsed.path == "/api/wiki/status":
         return _handle_llm_wiki_status(handler, parsed)
     if parsed.path == "/api/wiki/browse":
