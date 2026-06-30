@@ -1,0 +1,17 @@
+{
+  "_meta": {
+    "kind": "gbauto-repos-manifest",
+    "schema_version": 1,
+    "tenant": "gbautomation",
+    "client_slug": "gbautomation",
+    "pii_safe": true,
+    "aggregate_only": true,
+    "generated_at": "2026-06-30T00:00:00Z",
+    "source": "SAMPLE FIXTURE -- regenerate via the gbauto-github-index generator into HERMES_SNAPSHOT_ROOT"
+  },
+  "repos": [
+    {"name": "hermes-webui", "owner": "gblack686", "language": "Python", "stars": 0, "topics": ["dashboard", "hermes"], "last_commit_at": "2026-06-30T00:00:00Z"},
+    {"name": "gbautomation", "owner": "gblack686", "language": "Python", "stars": 0, "topics": ["second-brain", "agents"], "last_commit_at": "2026-06-29T00:00:00Z"}
+  ],
+  "totals": {"repos": 2}
+}

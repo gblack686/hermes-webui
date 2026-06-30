@@ -1,0 +1,25 @@
+{
+  "_meta": {
+    "kind": "prd-lineage-snapshot",
+    "schema_version": 1,
+    "tenant": "gbautomation",
+    "client_slug": "gbautomation",
+    "pii_safe": true,
+    "aggregate_only": true,
+    "generated_at": "2026-06-30T00:00:00Z",
+    "source": "SAMPLE FIXTURE -- regenerate via export_prd_lineage.mjs into HERMES_SNAPSHOT_ROOT"
+  },
+  "prds": [
+    {
+      "slug": "9119-to-webui-migration",
+      "title": "Migrate Hermes dashboard 9119 -> webui",
+      "status": "accepted",
+      "stages": ["plan", "build", "verify", "merge"],
+      "coverage": {"planned": 24, "ported": 4, "adopted": 9}
+    }
+  ],
+  "edges": [
+    {"from": "plan", "to": "build", "count": 24},
+    {"from": "build", "to": "merge", "count": 4}
+  ]
+}

@@ -1,0 +1,16 @@
+{
+  "_meta": {
+    "kind": "gbauto-supabase-contracts",
+    "schema_version": 1,
+    "tenant": "gbautomation",
+    "client_slug": "gbautomation",
+    "pii_safe": true,
+    "aggregate_only": true,
+    "generated_at": "2026-06-30T00:00:00Z",
+    "source": "SAMPLE FIXTURE"
+  },
+  "contracts": [
+    {"table": "agent_runs", "owner": "tac", "freshness_sla_hours": 24, "tenant_scoped": true},
+    {"table": "prd_artifacts", "owner": "prd-spine", "freshness_sla_hours": 168, "tenant_scoped": true}
+  ]
+}

@@ -1,0 +1,19 @@
+{
+  "_meta": {
+    "kind": "gbauto-supabase-index-snapshot",
+    "schema_version": 1,
+    "tenant": "gbautomation",
+    "client_slug": "gbautomation",
+    "pii_safe": true,
+    "aggregate_only": true,
+    "generated_at": "2026-06-30T00:00:00Z",
+    "source": "SAMPLE FIXTURE -- live data is Mini-only (Supabase DNS-blocked from PC); regenerate via the gbauto-supabase snapshot writer into HERMES_SNAPSHOT_ROOT"
+  },
+  "tables": [
+    {"name": "agent_runs", "schema": "public", "row_estimate": 1284, "size_pretty": "2.1 MB"},
+    {"name": "host_job_runs", "schema": "public", "row_estimate": 642, "size_pretty": "880 kB"},
+    {"name": "prd_artifacts", "schema": "public", "row_estimate": 227, "size_pretty": "1.4 MB"},
+    {"name": "tag_observations", "schema": "public", "row_estimate": 0, "size_pretty": "16 kB"}
+  ],
+  "totals": {"tables": 4, "rows_estimate": 2153}
+}

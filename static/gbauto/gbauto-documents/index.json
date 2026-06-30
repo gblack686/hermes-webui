@@ -1,0 +1,19 @@
+{
+  "_meta": {
+    "kind": "gbauto-documents-index",
+    "schema_version": 1,
+    "tenant": "gbautomation",
+    "client_slug": "gbautomation",
+    "pii_safe": true,
+    "aggregate_only": true,
+    "generated_at": "2026-06-30T00:00:00Z",
+    "storage": "google-cloud-storage",
+    "note": "Document BODIES (6.2 GB / 10.6k files) stream from GCS (B8) via the gcs_url field; only this index is served locally.",
+    "source": "SAMPLE FIXTURE -- regenerate via build_gbauto_documents_index.py (uploads bodies to GCS, emits this index)"
+  },
+  "documents": [
+    {"id": "doc-0001", "name": "9119-to-webui-migration.md", "kind": "plan", "size_bytes": 24400, "updated_at": "2026-06-30T00:00:00Z", "gcs_url": "https://storage.googleapis.com/gbauto-artifacts-prod/documents/doc-0001/9119-to-webui-migration.md"},
+    {"id": "doc-0002", "name": "sankey3js-improvements.md", "kind": "plan", "size_bytes": 18120, "updated_at": "2026-06-29T00:00:00Z", "gcs_url": "https://storage.googleapis.com/gbauto-artifacts-prod/documents/doc-0002/sankey3js-improvements.md"}
+  ],
+  "totals": {"documents": 2}
+}
