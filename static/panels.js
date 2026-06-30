@@ -41,7 +41,7 @@ const APP_TITLEBAR_KEYS = {
   memory: 'tab_memory', workspaces: 'tab_workspaces',
   profiles: 'tab_profiles', todos: 'tab_todos', insights: 'tab_insights', logs: 'tab_logs', settings: 'tab_settings',
 };
-const MAIN_VIEW_PANELS = ['home','overview','settings','skills','memory','tasks','kanban','workspaces','profiles','insights','logs','plugin','pluginhub'];
+const MAIN_VIEW_PANELS = ['home','overview','repos','settings','skills','memory','tasks','kanban','workspaces','profiles','insights','logs','plugin','pluginhub'];
 const MAIN_VIEW_SIDEBAR_PANEL_FALLBACKS = { plugin: 'settings' };
 
 /**
@@ -315,6 +315,7 @@ async function switchPanel(name, opts = {}) {
   // Lazy-load panel data
   if (nextPanel === 'home') _focusHomeComposer();
   if (nextPanel === 'overview') await loadOverview();
+  if (nextPanel === 'repos') await loadRepos();
   if (nextPanel === 'tasks') await loadCrons();
   if (nextPanel === 'kanban') await loadKanban();
   if (nextPanel === 'skills') await loadSkills();
@@ -582,6 +583,152 @@ async function loadOverview(force){
   ]);
   renderOverview({ repos, prds, dags });
   _overviewLoaded = true;
+}
+
+// ── GBAutomation Repos panel (plan B6) ──
+// Hand-port of 9119's GbAutomationReposPage: a card-grid of repo slices plus a
+// recent-activity sidebar and a free-text filter, all over the same B0a snapshot
+// (/repos/repos-manifest.json) the Overview panel reads. No backend, no 9119
+// token scheme. Tenant scoping is the SAME ported TENANT_CLIENT_ALIASES /
+// client_slug model used by the Overview panel (REQUIRED per plan decision #6):
+// the snapshot is pre-scoped at generation time, and this is the client-side
+// guard that keeps the operator hub from surfacing rows outside the active
+// tenant's client aliases. Helpers (_ovEsc / _overviewClientColor /
+// _overviewRelativeTime / _overviewTenantAllows / _overviewActiveTenant /
+// _overviewFetchJson) are reused from the Overview panel above.
+let _reposLoaded = false;
+let _reposData = null;
+let _reposQuery = '';
+
+function _reposTenantRepos(data, tenant){
+  const repos = (data && Array.isArray(data.repos)) ? data.repos : [];
+  return repos.filter((r) => _overviewTenantAllows(tenant, r && r.client));
+}
+function _reposTenantActivity(data, tenant){
+  const act = (data && Array.isArray(data.recent_activity)) ? data.recent_activity : [];
+  return act.filter((c) => _overviewTenantAllows(tenant, c && c.client));
+}
+function _reposSumCommits(repos){
+  return repos.reduce((total, r) => total + (Number(r && r.commit_count) || 0), 0);
+}
+function _reposMatchesQuery(repo, normalized){
+  const commits = (Array.isArray(repo.recent_commits) ? repo.recent_commits : [])
+    .map((c) => (c && c.message) || '').join(' ');
+  const hay = `${repo.repo || repo.name || ''} ${repo.client || ''} ${repo.role || ''} ${commits}`.toLowerCase();
+  return hay.indexOf(normalized) !== -1;
+}
+function _reposCard(repo){
+  const color = _overviewClientColor(repo.client);
+  const name = repo.repo || repo.name || '';
+  const commits = (Array.isArray(repo.recent_commits) ? repo.recent_commits : []).slice(0, 4);
+  const commitItems = commits.length
+    ? `<ul>${commits.map((c) => (
+        `<li><code>${_ovEsc((c.short_sha || c.sha || '').slice(0, 7))}</code>`
+        + `<span>${_ovEsc(c.message)}</span></li>`
+      )).join('')}</ul>`
+    : '';
+  return `<article class="gbhub-repo-card">`
+    + `<div class="gbhub-repo-topline"><h3>${_ovEsc(name)}</h3>`
+    +   `<span style="border-color:${_ovEsc(color)};color:${_ovEsc(color)}">${_ovEsc(repo.client)}</span></div>`
+    + (repo.role ? `<p>${_ovEsc(repo.role)}</p>` : '')
+    + `<div class="gbhub-repo-meta">`
+    +   `<span><strong>${_ovEsc(repo.commit_count != null ? repo.commit_count : 0)}</strong> commits</span>`
+    +   (repo.branch ? `<span>${_ovEsc(repo.branch)}</span>` : '')
+    +   `<span>${_ovEsc(_overviewRelativeTime(repo.last_commit_at))}</span>`
+    + `</div>`
+    + commitItems
+    + `</article>`;
+}
+function renderRepos(){
+  const container = document.getElementById('reposContent');
+  if (!container) return;
+  const data = _reposData;
+
+  if (!data) {
+    container.innerHTML = ''
+      + `<section class="gbhub-hero">`
+      +   `<div class="gbhub-brand-row"><span class="gbhub-mark">gb</span><span>GBAutomation</span></div>`
+      +   `<h2>Repos &amp; Commits</h2>`
+      +   `<p class="gbhub-muted">Commit index unavailable.</p>`
+      + `</section>`
+      + `<section class="gbhub-empty-state">Commit index unavailable.</section>`;
+    return;
+  }
+
+  const meta = data._meta || {};
+  const tenant = _overviewActiveTenant(meta);
+  const tenantRepos = _reposTenantRepos(data, tenant);
+  const tenantActivity = _reposTenantActivity(data, tenant);
+  const windowDays = data.window_days != null ? data.window_days : null;
+
+  const normalized = String(_reposQuery || '').trim().toLowerCase();
+  const filteredRepos = normalized
+    ? tenantRepos.filter((r) => _reposMatchesQuery(r, normalized))
+    : tenantRepos;
+
+  const ICON_GIT_SM = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="6" y1="3" x2="6" y2="15"/><circle cx="18" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M18 9a9 9 0 0 1-9 9"/></svg>';
+  const ICON_SEARCH = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.35-4.35"/></svg>';
+  const ICON_GRID = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>';
+  const ICON_COMMIT = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><line x1="3" y1="12" x2="9" y2="12"/><line x1="15" y1="12" x2="21" y2="12"/></svg>';
+
+  const heroStats = `<p><strong>${_ovEsc(_reposSumCommits(tenantRepos))}</strong> commits across `
+    + `<strong>${_ovEsc(tenantRepos.length)}</strong> repos for <strong>${_ovEsc(tenant)}</strong>`
+    + (windowDays != null ? `, last ${_ovEsc(windowDays)} days.` : '.') + `</p>`;
+
+  const grid = filteredRepos.length
+    ? `<section class="gbhub-repo-grid">${filteredRepos.map(_reposCard).join('')}</section>`
+    : `<section class="gbhub-empty-state">${tenantRepos.length ? 'No repos match the filter.' : 'No repos in scope.'}</section>`;
+
+  const activity = tenantActivity.slice(0, 16);
+  const activityList = activity.length
+    ? `<ul>${activity.map((c) => (
+        `<li><div>`
+        + `<span class="gbhub-client-dot" style="background:${_ovEsc(_overviewClientColor(c.client))}"></span>`
+        + `<span>${_ovEsc(c.repo)}</span>`
+        + `<time>${_ovEsc(_overviewRelativeTime(c.date))}</time>`
+        + `</div><p>${ICON_COMMIT} ${_ovEsc(c.message)}</p></li>`
+      )).join('')}</ul>`
+    : `<p class="gbhub-muted">No repo activity in scope.</p>`;
+
+  container.innerHTML = ''
+    + `<section class="gbhub-hero">`
+    +   `<div class="gbhub-brand-row"><span class="gbhub-mark">gb</span><span>GBAutomation</span></div>`
+    +   `<span class="gbhub-badge">${ICON_GIT_SM} Repo index</span>`
+    +   `<h2>Repos &amp; Commits</h2>`
+    +   heroStats
+    +   `<small class="gbhub-tenant">Tenant scope: <strong>${_ovEsc(tenant)}</strong>`
+    +     (meta.generated_at ? ` &middot; snapshot ${_ovEsc(_overviewRelativeTime(meta.generated_at) || meta.generated_at)}` : '')
+    +   `</small>`
+    + `</section>`
+    + `<section class="gbhub-repo-toolbar">`
+    +   `<label>${ICON_SEARCH}<input id="reposFilterInput" type="search" autocomplete="off" `
+    +     `value="${_ovEsc(_reposQuery)}" placeholder="Filter repos, clients, commits" oninput="onReposFilterInput(this.value)"></label>`
+    +   `<span>${ICON_GRID} ${_ovEsc(filteredRepos.length)} repos</span>`
+    + `</section>`
+    + `<div class="gbhub-two-column">`
+    +   grid
+    +   `<aside class="gbhub-activity-panel"><p class="gbhub-eyebrow">Recent Activity</p>${activityList}</aside>`
+    + `</div>`;
+}
+function onReposFilterInput(value){
+  _reposQuery = value;
+  const container = document.getElementById('reposContent');
+  if (!container) return;
+  renderRepos();
+  // Re-focus the input + restore caret to end after the innerHTML rebuild.
+  const input = document.getElementById('reposFilterInput');
+  if (input) {
+    input.focus();
+    try { const n = input.value.length; input.setSelectionRange(n, n); } catch (_e) {}
+  }
+}
+async function loadRepos(force){
+  const container = document.getElementById('reposContent');
+  if (!container) return;
+  if (_reposLoaded && !force) return;
+  _reposData = await _overviewFetchJson('/repos/repos-manifest.json');
+  _reposLoaded = true;
+  renderRepos();
 }
 
 // ── Cron panel ──

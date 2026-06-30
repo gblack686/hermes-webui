@@ -4594,10 +4594,12 @@ main.main > #mainWorkspaces,
 main.main > #mainProfiles,
 main.main > #mainInsights,
 main.main > #mainLogs{display:none;}
-main.main:not(.showing-home):not(.showing-overview):not(.showing-settings):not(.showing-skills):not(.showing-memory):not(.showing-tasks):not(.showing-kanban):not(.showing-workspaces):not(.showing-profiles):not(.showing-insights):not(.showing-logs):not(.showing-plugin):not(.showing-pluginhub) > #mainChat{display:flex;}
+main.main:not(.showing-home):not(.showing-overview):not(.showing-repos):not(.showing-settings):not(.showing-skills):not(.showing-memory):not(.showing-tasks):not(.showing-kanban):not(.showing-workspaces):not(.showing-profiles):not(.showing-insights):not(.showing-logs):not(.showing-plugin):not(.showing-pluginhub) > #mainChat{display:flex;}
 main.main.showing-home > #mainHome{display:flex;overflow-y:auto;}
 main.main.showing-overview > #mainOverview{display:flex;overflow-y:auto;}
 main.main > #mainOverview{display:none;}
+main.main.showing-repos > #mainRepos{display:flex;overflow-y:auto;}
+main.main > #mainRepos{display:none;}
 main.main.showing-settings > #mainSettings{display:flex;overflow-y:auto;}
 main.main.showing-skills > #mainSkills{display:flex;}
 main.main.showing-memory > #mainMemory{display:flex;}
@@ -4675,7 +4677,7 @@ main.main.showing-pluginhub > #mainPluginhub{display:flex;overflow-y:auto;}
 /* ── GBAutomation Overview panel (plan B5) ── */
 /* Ported from 9119 gbhub-* classes, adapted to webui theme tokens. Brand
    terracotta (#d97757) is the canonical GBAuto SOT hex and kept literal. */
-#mainOverview{flex-direction:column;}
+#mainOverview,#mainRepos{flex-direction:column;}
 .gbhub-scroll{width:100%;max-width:1040px;margin:0 auto;padding:32px 24px 64px;}
 .gbhub-page{display:grid;width:100%;gap:16px;color:var(--text);}
 .gbhub-hero,
@@ -4723,7 +4725,27 @@ main.main.showing-pluginhub > #mainPluginhub{display:flex;overflow-y:auto;}
 .gbhub-dag-strip article svg{color:#d97757;}
 .gbhub-dag-strip article strong{font-size:13px;line-height:1.25;}
 .gbhub-dag-strip article span{color:var(--muted);font-size:11.5px;}
+/* GBAutomation Repos panel (plan B6) */
+.gbhub-repo-toolbar{display:flex;align-items:center;gap:12px;flex-wrap:wrap;}
+.gbhub-repo-toolbar label{display:flex;align-items:center;gap:8px;flex:1 1 260px;min-width:0;padding:8px 12px;border:1px solid var(--border);border-radius:8px;background:var(--input-bg);color:var(--muted);}
+.gbhub-repo-toolbar label:focus-within{border-color:rgba(217,119,87,.5);}
+.gbhub-repo-toolbar input{flex:1;min-width:0;border:none;background:transparent;color:var(--text);font:inherit;font-size:13px;outline:none;}
+.gbhub-repo-toolbar > span{display:inline-flex;align-items:center;gap:6px;color:var(--muted);font-size:12px;white-space:nowrap;}
+.gbhub-repo-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;align-content:start;}
+.gbhub-repo-card{display:grid;gap:8px;align-content:start;padding:16px;border:1px solid var(--border);border-radius:8px;background:var(--surface);box-shadow:0 1px 2px rgba(0,0,0,.04);}
+.gbhub-repo-topline{display:flex;align-items:center;gap:10px;}
+.gbhub-repo-topline h3{margin:0;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text);font-family:var(--font-ui);font-size:15px;font-weight:600;}
+.gbhub-repo-topline span{flex-shrink:0;padding:2px 9px;border:1px solid;border-radius:999px;font-size:10.5px;font-weight:700;letter-spacing:.02em;}
+.gbhub-repo-card > p{margin:0;color:var(--muted);font-size:12.5px;line-height:1.45;}
+.gbhub-repo-meta{display:flex;flex-wrap:wrap;gap:12px;color:var(--muted);font-size:11.5px;}
+.gbhub-repo-meta strong{color:var(--text);}
+.gbhub-repo-card ul{display:grid;gap:6px;margin:6px 0 0;padding:0;list-style:none;}
+.gbhub-repo-card li{display:flex;align-items:baseline;gap:8px;min-width:0;font-size:11.5px;}
+.gbhub-repo-card li code{flex-shrink:0;color:#d97757;font-size:11px;}
+.gbhub-repo-card li span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text);}
+.gbhub-empty-state{padding:32px 16px;border:1px dashed var(--border);border-radius:8px;background:var(--surface);color:var(--muted);text-align:center;font-size:13px;}
 @media (max-width:1024px){
+  .gbhub-repo-grid{grid-template-columns:1fr;}
   .gbhub-stat-grid,
   .gbhub-dag-strip > div{grid-template-columns:repeat(2,minmax(0,1fr));}
   .gbhub-two-column{grid-template-columns:1fr;}
