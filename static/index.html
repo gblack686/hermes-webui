@@ -171,6 +171,7 @@
     <button class="rail-btn nav-tab dashboard-link has-tooltip" id="dashboardRailBtn" data-dashboard-link style="display:none" onclick="openHermesDashboard(event)" data-tooltip="Hermes Dashboard" data-i18n-title="tab_dashboard" aria-label="Hermes Dashboard"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/><path d="M9 21V9"/></svg><span class="dashboard-external-badge" aria-hidden="true"></span></button>
     <button class="rail-btn nav-tab has-tooltip" data-panel="logs" onclick="switchPanel('logs',{fromRailClick:true})" data-tooltip="Logs" data-i18n-title="tab_logs" aria-label="Logs"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M8 13h8"/><path d="M8 17h8"/><path d="M8 9h2"/></svg></button>
     <button class="rail-btn nav-tab has-tooltip" data-panel="pluginhub" onclick="switchPanel('pluginhub',{fromRailClick:true})" data-tooltip="Plugins" data-i18n-title="tab_pluginhub" aria-label="Plugins"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 3v3.5a1.5 1.5 0 0 1-3 0V3H4a1 1 0 0 0-1 1v3.5a1.5 1.5 0 0 0 0 3V14a1 1 0 0 0 1 1h3.5a1.5 1.5 0 0 1 3 0V18a1 1 0 0 0 1 1h3.5a1.5 1.5 0 0 0 3 0H21a1 1 0 0 0 1-1v-3.5a1.5 1.5 0 0 1 0-3V7a1 1 0 0 0-1-1h-3.5a1.5 1.5 0 0 0-3 0V3a1 1 0 0 0-1-1h-3.5z"/></svg></button>
+    <button class="rail-btn nav-tab has-tooltip" data-panel="agentconfig" onclick="switchPanel('agentconfig',{fromRailClick:true})" data-tooltip="Agent Config" aria-label="Agent Config"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/></svg></button>
     <div class="rail-spacer"></div>
     <button class="rail-btn nav-tab has-tooltip" data-panel="settings" onclick="switchPanel('settings',{fromRailClick:true})" data-tooltip="Settings" data-i18n-title="tab_settings" aria-label="Settings"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg><span class="auth-warning-badge" id="authWarningBadgeDesktop" style="display:none;position:absolute;top:4px;right:4px;width:8px;height:8px;border-radius:50%;background:#e05"></span></button>
   </nav>
@@ -199,6 +200,7 @@
       <button class="nav-tab dashboard-link has-tooltip has-tooltip--bottom" id="dashboardMobileBtn" data-dashboard-link data-label="Dashboard" style="display:none" onclick="openHermesDashboard(event)" data-tooltip="Hermes Dashboard" data-i18n-title="tab_dashboard"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/><path d="M9 21V9"/></svg><span class="dashboard-external-badge" aria-hidden="true"></span></button>
       <button class="nav-tab has-tooltip has-tooltip--bottom" data-panel="logs" data-label="Logs" onclick="switchPanel('logs',{fromRailClick:true})" data-tooltip="Logs" data-i18n-title="tab_logs"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M8 13h8"/><path d="M8 17h8"/><path d="M8 9h2"/></svg></button>
       <button class="nav-tab has-tooltip has-tooltip--bottom" data-panel="pluginhub" data-label="Plugins" onclick="switchPanel('pluginhub',{fromRailClick:true})" data-tooltip="Plugins" data-i18n-title="tab_pluginhub"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 3v3.5a1.5 1.5 0 0 1-3 0V3H4a1 1 0 0 0-1 1v3.5a1.5 1.5 0 0 0 0 3V14a1 1 0 0 0 1 1h3.5a1.5 1.5 0 0 1 3 0V18a1 1 0 0 0 1 1h3.5a1.5 1.5 0 0 0 3 0H21a1 1 0 0 0 1-1v-3.5a1.5 1.5 0 0 1 0-3V7a1 1 0 0 0-1-1h-3.5a1.5 1.5 0 0 0-3 0V3a1 1 0 0 0-1-1h-3.5z"/></svg></button>
+      <button class="nav-tab has-tooltip has-tooltip--bottom" data-panel="agentconfig" data-label="Agent Config" onclick="switchPanel('agentconfig',{fromRailClick:true})" data-tooltip="Agent Config"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/></svg></button>
       <!-- Settings button mirrored here for mobile (rail is desktop-only via @media >=768px). Keep in sync with rail entry. -->
       <button class="nav-tab has-tooltip has-tooltip--bottom" data-panel="settings" onclick="switchPanel('settings',{fromRailClick:true})" data-tooltip="Settings" data-i18n-title="tab_settings" style="position:relative"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg><span class="auth-warning-badge" id="authWarningBadgeMobile" style="display:none;position:absolute;top:4px;right:4px;width:8px;height:8px;border-radius:50%;background:#e05"></span></button>
     </div>
@@ -319,6 +321,19 @@
           <button type="button" class="home-panel-link" onclick="switchPanel('kanban')"><span>Kanban Board</span></button>
           <button type="button" class="home-panel-link" onclick="switchPanel('supabase')"><span>Supabase</span></button>
           <button type="button" class="home-panel-link" onclick="loadKanbanData(true)"><span>Refresh snapshot</span></button>
+        </div>
+      </div>
+    </div>
+    <!-- Agent Config schema editor panel (plan B2) -->
+    <div class="panel-view" id="panelAgentconfig">
+      <div class="panel-head">
+        <span>Agent Config</span>
+      </div>
+      <div class="home-panel-body">
+        <p class="home-panel-lede">Edit the Hermes agent config.yaml (model, terminal, agent settings). Use the Form view for guided fields or the YAML view for a raw round-trip edit. Distinct from WebUI Settings.</p>
+        <div class="home-panel-links">
+          <button type="button" class="home-panel-link" onclick="switchPanel('settings')"><span>WebUI Settings</span></button>
+          <button type="button" class="home-panel-link" onclick="loadAgentConfig()"><span>Reload</span></button>
         </div>
       </div>
     </div>
@@ -1154,6 +1169,14 @@
         <div style="color:var(--muted);font-size:13px" data-i18n="loading">Loading...</div>
       </div>
     </div>
+    <div id="mainAgentconfig" class="main-view">
+      <div class="main-view-header">
+        <div class="main-view-title">Agent Config</div>
+      </div>
+      <div class="main-view-body">
+        <div id="agentConfigRoot"><div style="color:var(--muted);font-size:13px">Loading...</div></div>
+      </div>
+    </div>
     <div id="mainSettings" class="main-view">
       <div class="settings-main">
           <div class="settings-pane active" id="settingsPaneConversation">
@@ -1909,6 +1932,7 @@
 <script src="static/panels.js?v=__WEBUI_VERSION__" defer></script>
 <script src="static/gbauto-data.js?v=__WEBUI_VERSION__" defer></script>
 <script src="static/pluginhub.js?v=__WEBUI_VERSION__" defer></script>
+<script src="static/agent_config.js?v=__WEBUI_VERSION__" defer></script>
 <script src="static/onboarding.js?v=__WEBUI_VERSION__" defer></script>
 <script src="static/boot.js?v=__WEBUI_VERSION__" defer></script>
 <script src="static/outline.js?v=__WEBUI_VERSION__" defer></script>

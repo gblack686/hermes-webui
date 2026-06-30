@@ -1,0 +1,24 @@
+# Sample Hermes AGENT config.yaml fixture (B2 config-schema-editor).
+# Used only for offline PC smoke when hermes_cli is not importable and no real
+# ~/.hermes/config.yaml exists. The live editor reads/writes the active
+# profile's real config.yaml via api/config._get_config_path().
+_config_version: 1
+model:
+  default: anthropic/claude-sonnet-4.6
+  provider: anthropic
+  context_length: 0
+timezone: America/Los_Angeles
+agent:
+  max_turns: 50
+  service_tier: auto
+terminal:
+  backend: local
+display:
+  skin: default
+dashboard:
+  theme: default
+logging:
+  level: INFO
+security:
+  approvals:
+    mode: ask

@@ -10135,6 +10135,88 @@ def _handle_gbauto_langfuse(handler, parsed) -> bool:
         return bad(handler, f"langfuse failed: {exc}", status=500)
 
 
+# ── Agent Config schema editor (B2 — 9119 → webui migration) ──────────────────
+# Edits the Hermes *agent* config.yaml (model/terminal/agent.*). Namespaced under
+# /api/agent-config* so it never collides with WebUI's own /api/settings +
+# api/config.py runtime env. Reads are open; writes gate on WebUI's OWN auth
+# (_sankey_auth_ok — we do NOT port 9119's bearer-token scheme). DEFAULT_CONFIG +
+# the config file degrade to committed fixtures on the PC (hermes_cli absent).
+def _handle_agent_config_get(handler, parsed) -> bool:
+    """GET /api/agent-config — normalized agent config (internal keys stripped)."""
+    from api import agent_config_schema as acs
+    try:
+        return j(handler, acs.get_config()) or True
+    except Exception as exc:
+        logger.warning("agent-config get failed: %s", exc)
+        return bad(handler, f"agent-config failed: {exc}", status=500)
+
+
+def _handle_agent_config_schema(handler, parsed) -> bool:
+    """GET /api/agent-config/schema — {fields, category_order}."""
+    from api import agent_config_schema as acs
+    try:
+        return j(handler, acs.build_config_schema()) or True
+    except Exception as exc:
+        logger.warning("agent-config schema failed: %s", exc)
+        return bad(handler, f"agent-config schema failed: {exc}", status=500)
+
+
+def _handle_agent_config_defaults(handler, parsed) -> bool:
+    """GET /api/agent-config/defaults — DEFAULT_CONFIG."""
+    from api import agent_config_schema as acs
+    try:
+        return j(handler, acs.get_defaults()) or True
+    except Exception as exc:
+        logger.warning("agent-config defaults failed: %s", exc)
+        return bad(handler, f"agent-config defaults failed: {exc}", status=500)
+
+
+def _handle_agent_config_raw_get(handler, parsed) -> bool:
+    """GET /api/agent-config/raw — {yaml, path, is_fixture}."""
+    from api import agent_config_schema as acs
+    try:
+        return j(handler, acs.get_config_raw()) or True
+    except Exception as exc:
+        logger.warning("agent-config raw get failed: %s", exc)
+        return bad(handler, f"agent-config raw failed: {exc}", status=500)
+
+
+def _handle_agent_config_put(handler, parsed, body) -> bool:
+    """PUT /api/agent-config — denormalize + persist (auth-gated)."""
+    if not _sankey_auth_ok(handler):
+        return bad(handler, "Authentication required", status=401)
+    from api import agent_config_schema as acs
+    cfg = body.get("config") if isinstance(body, dict) else None
+    try:
+        acs.update_config(cfg)
+        return j(handler, {"ok": True}) or True
+    except ValueError as exc:
+        return bad(handler, str(exc), status=400)
+    except Exception as exc:
+        logger.warning("agent-config put failed: %s", exc)
+        return bad(handler, f"agent-config save failed: {exc}", status=500)
+
+
+def _handle_agent_config_raw_put(handler, parsed, body) -> bool:
+    """PUT /api/agent-config/raw — validate YAML mapping + persist (auth-gated)."""
+    if not _sankey_auth_ok(handler):
+        return bad(handler, "Authentication required", status=401)
+    from api import agent_config_schema as acs
+    yaml_text = body.get("yaml") if isinstance(body, dict) else None
+    if yaml_text is None and isinstance(body, dict):
+        yaml_text = body.get("yaml_text")
+    if not isinstance(yaml_text, str):
+        return bad(handler, "yaml must be a string", status=400)
+    try:
+        acs.update_config_raw(yaml_text)
+        return j(handler, {"ok": True}) or True
+    except ValueError as exc:
+        return bad(handler, str(exc), status=400)
+    except Exception as exc:
+        logger.warning("agent-config raw put failed: %s", exc)
+        return bad(handler, f"agent-config save failed: {exc}", status=500)
+
+
 def handle_get(handler, parsed) -> bool:
     """Handle all GET routes. Returns True if handled, False for 404."""
 
@@ -10303,6 +10385,14 @@ def handle_get(handler, parsed) -> bool:
         return _handle_sankey_tables(handler, parsed)
     if parsed.path == "/api/plugins/sankey-explorer/chart":
         return _handle_sankey_chart(handler, parsed)
+    if parsed.path == "/api/agent-config":
+        return _handle_agent_config_get(handler, parsed)
+    if parsed.path == "/api/agent-config/schema":
+        return _handle_agent_config_schema(handler, parsed)
+    if parsed.path == "/api/agent-config/defaults":
+        return _handle_agent_config_defaults(handler, parsed)
+    if parsed.path == "/api/agent-config/raw":
+        return _handle_agent_config_raw_get(handler, parsed)
     if parsed.path == "/api/wiki/status":
         return _handle_llm_wiki_status(handler, parsed)
     if parsed.path == "/api/wiki/browse":
@@ -14164,6 +14254,10 @@ def handle_put(handler, parsed) -> bool:
     if parsed.path.startswith("/api/mcp/servers/"):
         name = parsed.path[len("/api/mcp/servers/"):]
         return _handle_mcp_server_update(handler, name, body)
+    if parsed.path == "/api/agent-config":
+        return _handle_agent_config_put(handler, parsed, body)
+    if parsed.path == "/api/agent-config/raw":
+        return _handle_agent_config_raw_put(handler, parsed, body)
     return False
 
 # ── GET route helpers ─────────────────────────────────────────────────────────
