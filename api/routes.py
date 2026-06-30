@@ -11720,6 +11720,14 @@ def handle_get(handler, parsed) -> bool:
                     handler.wfile.write(html_content)
                     return True
 
+    # GBAutomation static-snapshot serving (plan B0a). Prefix-allowlisted JSON
+    # snapshots for the gbauto tabs (B5-B9), served sandboxed from
+    # HERMES_SNAPSHOT_ROOT. Placed before the 404 fall-through.
+    from api.snapshot import is_snapshot_path, serve_snapshot
+
+    if is_snapshot_path(parsed.path):
+        return serve_snapshot(handler, parsed)
+
     return False  # 404
 
 
@@ -14095,6 +14103,7 @@ def handle_put(handler, parsed) -> bool:
 _STATIC_MIME = {
     "css": "text/css",
     "js": "application/javascript",
+    "json": "application/json",
     "html": "text/html",
     "svg": "image/svg+xml",
     "png": "image/png",

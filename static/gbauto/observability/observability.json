@@ -1,0 +1,18 @@
+{
+  "_meta": {
+    "kind": "gbauto-observability-rollup",
+    "schema_version": 1,
+    "tenant": "gbautomation",
+    "client_slug": "gbautomation",
+    "pii_safe": true,
+    "aggregate_only": true,
+    "generated_at": "2026-06-30T00:00:00Z",
+    "source": "SAMPLE FIXTURE -- regenerate via nightly_artifact_diff.py into HERMES_SNAPSHOT_ROOT"
+  },
+  "rollup": {
+    "agent_runs_24h": 42,
+    "host_job_runs_24h": 18,
+    "error_events_24h": 3,
+    "by_status": {"completed": 55, "failed": 3, "running": 2}
+  }
+}
