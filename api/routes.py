@@ -11720,6 +11720,29 @@ def handle_get(handler, parsed) -> bool:
                     handler.wfile.write(html_content)
                     return True
 
+    # GBAutomation documents (plan B8): resolve a browser-openable URL for a
+    # document id. The index is served via B0a (/gbauto-documents/index.json);
+    # document BODIES (6.2 GB) stream from Google Cloud Storage. This scaffold
+    # mints a signed GCS URL when gcloud is authed (Mini-only) and otherwise
+    # degrades to the public gcs_url from the committed index (signed:false,
+    # mini_pending:true). Gated on webui's OWN auth (NOT 9119's token scheme).
+    if parsed.path == "/api/documents/url":
+        from api.auth import is_auth_enabled, parse_cookie, verify_session
+
+        if is_auth_enabled():
+            cookie_val = parse_cookie(handler)
+            if not (cookie_val and verify_session(cookie_val)):
+                return bad(handler, "Authentication required", status=401) or True
+        from api import gcs_documents
+
+        doc_id = (parse_qs(parsed.query).get("id") or [""])[0]
+        if not doc_id:
+            return bad(handler, "missing id", status=400) or True
+        resolved = gcs_documents.resolve_document_url(doc_id)
+        if not resolved:
+            return j(handler, {"error": "unknown document id"}, status=404) or True
+        return j(handler, resolved) or True
+
     # GBAutomation static-snapshot serving (plan B0a). Prefix-allowlisted JSON
     # snapshots for the gbauto tabs (B5-B9), served sandboxed from
     # HERMES_SNAPSHOT_ROOT. Placed before the 404 fall-through.

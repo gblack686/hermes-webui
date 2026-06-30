@@ -4594,7 +4594,7 @@ main.main > #mainWorkspaces,
 main.main > #mainProfiles,
 main.main > #mainInsights,
 main.main > #mainLogs{display:none;}
-main.main:not(.showing-home):not(.showing-overview):not(.showing-repos):not(.showing-lineage):not(.showing-settings):not(.showing-skills):not(.showing-memory):not(.showing-tasks):not(.showing-kanban):not(.showing-workspaces):not(.showing-profiles):not(.showing-insights):not(.showing-logs):not(.showing-plugin):not(.showing-pluginhub) > #mainChat{display:flex;}
+main.main:not(.showing-home):not(.showing-overview):not(.showing-repos):not(.showing-lineage):not(.showing-documents):not(.showing-settings):not(.showing-skills):not(.showing-memory):not(.showing-tasks):not(.showing-kanban):not(.showing-workspaces):not(.showing-profiles):not(.showing-insights):not(.showing-logs):not(.showing-plugin):not(.showing-pluginhub) > #mainChat{display:flex;}
 main.main.showing-home > #mainHome{display:flex;overflow-y:auto;}
 main.main.showing-overview > #mainOverview{display:flex;overflow-y:auto;}
 main.main > #mainOverview{display:none;}
@@ -4602,6 +4602,8 @@ main.main.showing-repos > #mainRepos{display:flex;overflow-y:auto;}
 main.main > #mainRepos{display:none;}
 main.main.showing-lineage > #mainLineage{display:flex;overflow-y:auto;}
 main.main > #mainLineage{display:none;}
+main.main.showing-documents > #mainDocuments{display:flex;overflow-y:auto;}
+main.main > #mainDocuments{display:none;}
 main.main.showing-settings > #mainSettings{display:flex;overflow-y:auto;}
 main.main.showing-skills > #mainSkills{display:flex;}
 main.main.showing-memory > #mainMemory{display:flex;}
@@ -4679,7 +4681,7 @@ main.main.showing-pluginhub > #mainPluginhub{display:flex;overflow-y:auto;}
 /* ── GBAutomation Overview panel (plan B5) ── */
 /* Ported from 9119 gbhub-* classes, adapted to webui theme tokens. Brand
    terracotta (#d97757) is the canonical GBAuto SOT hex and kept literal. */
-#mainOverview,#mainRepos,#mainLineage{flex-direction:column;}
+#mainOverview,#mainRepos,#mainLineage,#mainDocuments{flex-direction:column;}
 .gbhub-scroll{width:100%;max-width:1040px;margin:0 auto;padding:32px 24px 64px;}
 .gbhub-page{display:grid;width:100%;gap:16px;color:var(--text);}
 .gbhub-hero,
@@ -4809,6 +4811,62 @@ main.main.showing-pluginhub > #mainPluginhub{display:flex;overflow-y:auto;}
   .gbhub-dag-strip > div{grid-template-columns:1fr;}
   .lineage-detail-grid{grid-template-columns:repeat(2,minmax(0,1fr));}
   .gbhub-badge{position:static;margin-top:12px;}
+}
+
+/* ── Documents gallery panel (plan B8) ── */
+/* Reuses gbhub-* primitives (hero/stat-card/empty-state) + the same theme
+   tokens as Overview/Repos/Lineage. Index served by B0a; bodies stream from GCS. */
+.documents-toolbar{display:flex;flex-wrap:wrap;align-items:center;gap:10px;}
+.documents-search{display:flex;align-items:center;gap:8px;flex:1;min-width:220px;padding:8px 12px;border:1px solid var(--border);border-radius:8px;background:var(--surface);color:var(--muted);}
+.documents-search svg{flex:none;color:var(--muted);}
+.documents-search input{flex:1;min-width:0;border:0;background:transparent;color:var(--text);font:inherit;font-size:13px;outline:none;}
+.documents-select{padding:8px 10px;border:1px solid var(--border);border-radius:8px;background:var(--input-bg);color:var(--text);font:inherit;font-size:12.5px;cursor:pointer;}
+.documents-clear{padding:8px 12px;border:1px solid var(--border);border-radius:8px;background:var(--surface);color:var(--muted);font:inherit;font-size:12.5px;cursor:pointer;}
+.documents-clear:hover{border-color:var(--accent,#d97757);color:var(--text);}
+.documents-date-bar{display:flex;flex-wrap:wrap;align-items:center;gap:12px;}
+.documents-date-input{padding:7px 10px;border:1px solid var(--border);border-radius:8px;background:var(--input-bg);color:var(--text);font:inherit;font-size:12.5px;}
+.documents-date-chips{display:flex;flex-wrap:wrap;gap:6px;}
+.documents-date-chip{display:inline-flex;flex-direction:column;align-items:center;gap:1px;padding:5px 10px;border:1px solid var(--border);border-radius:8px;background:var(--surface);color:var(--muted);font:inherit;font-size:11px;cursor:pointer;line-height:1.2;}
+.documents-date-chip small{font-size:10px;opacity:.8;}
+.documents-date-chip.is-active{border-color:rgba(217,119,87,.6);background:rgba(217,119,87,.08);color:var(--text);}
+.documents-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:14px;}
+.documents-card{display:flex;flex-direction:column;border:1px solid var(--border);border-radius:10px;background:var(--surface);overflow:hidden;transition:border-color .16s ease;}
+.documents-card:hover{border-color:rgba(217,119,87,.42);}
+.documents-card.is-selected{border-color:rgba(217,119,87,.6);}
+.documents-card-preview{position:relative;height:148px;background:var(--input-bg);overflow:hidden;display:flex;align-items:center;justify-content:center;}
+.documents-preview-frame{width:100%;height:100%;border:0;object-fit:cover;background:var(--input-bg);}
+.documents-preview-plate{display:flex;align-items:center;justify-content:center;}
+.documents-ext-badge{font-size:13px;font-weight:700;letter-spacing:.06em;color:var(--muted);padding:8px 14px;border:1px dashed var(--border);border-radius:8px;background:var(--surface);}
+.documents-open-btn{position:absolute;right:8px;bottom:8px;padding:5px 12px;border:1px solid var(--border);border-radius:7px;background:var(--surface);color:var(--text);font:inherit;font-size:12px;font-weight:600;cursor:pointer;opacity:.94;}
+.documents-open-btn:hover{border-color:var(--accent,#d97757);}
+.documents-card-body{display:flex;flex-direction:column;gap:7px;padding:12px 14px;}
+.documents-card-top{display:flex;align-items:center;justify-content:space-between;gap:8px;}
+.documents-card-kind{font-size:10.5px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--muted);}
+.documents-card-client{padding:2px 9px;border:1px solid;border-radius:999px;font-size:10px;font-weight:700;letter-spacing:.02em;}
+.documents-card-title{margin:0;color:var(--text);font-family:var(--font-ui);font-size:14px;font-weight:600;line-height:1.25;}
+.documents-card-desc{margin:0;color:var(--muted);font-size:12px;line-height:1.45;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
+.documents-card-meta{display:flex;flex-wrap:wrap;gap:8px;color:var(--muted);font-size:11px;margin-top:2px;}
+/* Modal preview overlay */
+.documents-modal{position:fixed;inset:0;z-index:60;display:flex;align-items:center;justify-content:center;padding:24px;background:rgba(0,0,0,.55);}
+.documents-modal-stage{display:grid;grid-template-columns:minmax(0,1fr) minmax(260px,320px);gap:0;width:min(1080px,100%);height:min(78vh,760px);background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;box-shadow:0 18px 48px rgba(0,0,0,.4);}
+.documents-modal-frame-wrap{background:var(--input-bg);overflow:auto;display:flex;align-items:center;justify-content:center;}
+.documents-modal-frame{width:100%;height:100%;border:0;object-fit:contain;background:var(--input-bg);}
+.documents-modal-side{position:relative;display:flex;flex-direction:column;gap:12px;padding:20px;border-left:1px solid var(--border);overflow-y:auto;}
+.documents-modal-close{position:absolute;top:12px;right:14px;width:28px;height:28px;border:1px solid var(--border);border-radius:7px;background:var(--surface);color:var(--text);font-size:18px;line-height:1;cursor:pointer;}
+.documents-modal-close:hover{border-color:var(--accent,#d97757);}
+.documents-modal-side h3{margin:0;color:var(--text);font-family:var(--font-ui);font-size:16px;font-weight:600;line-height:1.25;padding-right:30px;}
+.documents-modal-meta{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;}
+.documents-modal-meta span{display:grid;gap:2px;padding:8px;border:1px solid var(--border);border-radius:7px;background:var(--input-bg);color:var(--text);font-size:11.5px;}
+.documents-modal-meta b{color:var(--muted);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.03em;}
+.documents-modal-note{font-size:11.5px;color:var(--muted);}
+.documents-modal-note.warn{color:#caa14a;}
+.documents-modal-note.ok{color:#4F9D69;}
+.documents-modal-open{display:inline-flex;align-items:center;justify-content:center;padding:9px 14px;border:1px solid var(--accent,#d97757);border-radius:8px;background:rgba(217,119,87,.1);color:var(--text);font-size:13px;font-weight:600;text-decoration:none;}
+.documents-modal-open:hover{background:rgba(217,119,87,.18);}
+@media (max-width:760px){
+  .documents-grid{grid-template-columns:repeat(auto-fill,minmax(180px,1fr));}
+  .documents-modal-stage{grid-template-columns:1fr;height:88vh;}
+  .documents-modal-side{border-left:0;border-top:1px solid var(--border);}
 }
 
 /* Sidebar menu (lives in the left sidebar under the cog panel) */
