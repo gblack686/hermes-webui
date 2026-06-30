@@ -1,19 +1,482 @@
 {
   "_meta": {
     "kind": "gbauto-supabase-index-snapshot",
-    "schema_version": 1,
+    "schema_version": 2,
     "tenant": "gbautomation",
     "client_slug": "gbautomation",
     "pii_safe": true,
     "aggregate_only": true,
-    "generated_at": "2026-06-30T00:00:00Z",
+    "generated_at": "2026-06-30T11:05:00Z",
     "source": "SAMPLE FIXTURE -- live data is Mini-only (Supabase DNS-blocked from PC); regenerate via the gbauto-supabase snapshot writer into HERMES_SNAPSHOT_ROOT"
   },
+  "generated_at": "2026-06-30T11:05:00Z",
+  "live": false,
+  "row_limit": 10,
+  "window_days": 7,
+  "dashboards": {
+    "ops": {
+      "title": "Operations",
+      "subtitle": "Host jobs, crons, and run receipts"
+    },
+    "kanban": {
+      "title": "Kanban",
+      "subtitle": "Agent runs, tasks, dispatch links, and profiles"
+    },
+    "observability": {
+      "title": "Observability",
+      "subtitle": "Langfuse traces and log artifacts"
+    },
+    "tac": {
+      "title": "TAC Quality",
+      "subtitle": "Test suites and component retrievals"
+    },
+    "ecom": {
+      "title": "Ecom Intelligence",
+      "subtitle": "Telemetry backfills and scrape health"
+    }
+  },
   "tables": [
-    {"name": "agent_runs", "schema": "public", "row_estimate": 1284, "size_pretty": "2.1 MB"},
-    {"name": "host_job_runs", "schema": "public", "row_estimate": 642, "size_pretty": "880 kB"},
-    {"name": "prd_artifacts", "schema": "public", "row_estimate": 227, "size_pretty": "1.4 MB"},
-    {"name": "tag_observations", "schema": "public", "row_estimate": 0, "size_pretty": "16 kB"}
+    {
+      "name": "agent_runs",
+      "label": "Agent Runs",
+      "description": "Hermes Kanban board mirror of autonomous agent runs.",
+      "dashboard": "kanban",
+      "rows": [
+        {
+          "status": "done",
+          "title": "B5 Overview tab",
+          "board_slug": "webui-migration",
+          "profile": "carlos",
+          "assignee": "carlos",
+          "client_slug": "gbautomation",
+          "repo_slug": "hermes-webui",
+          "source_updated_at": "2026-06-30T09:12:00Z"
+        },
+        {
+          "status": "running",
+          "title": "B9 data-plane tabs",
+          "board_slug": "webui-migration",
+          "profile": "carlos",
+          "assignee": "carlos",
+          "client_slug": "gbautomation",
+          "repo_slug": "hermes-webui",
+          "source_updated_at": "2026-06-30T10:40:00Z"
+        },
+        {
+          "status": "failed",
+          "title": "ecom hourly lane retry",
+          "board_slug": "ecom-ops",
+          "profile": "jason-operations",
+          "assignee": "jason-operations",
+          "client_slug": "ecom",
+          "repo_slug": "gbautomation",
+          "source_updated_at": "2026-06-29T22:05:00Z"
+        },
+        {
+          "status": "done",
+          "title": "mall scraper deploy",
+          "board_slug": "the-mall",
+          "profile": "jason-operations",
+          "assignee": "jason-operations",
+          "client_slug": "the-mall",
+          "repo_slug": "gbautomation",
+          "source_updated_at": "2026-06-28T17:30:00Z"
+        },
+        {
+          "status": "blocked",
+          "title": "gcloud reauth",
+          "board_slug": "ops",
+          "profile": "carlos",
+          "assignee": "carlos",
+          "client_slug": "gbautomation",
+          "repo_slug": "gbautomation",
+          "source_updated_at": "2026-06-27T14:00:00Z"
+        }
+      ],
+      "summary": {
+        "row_count": 5,
+        "latest": "2026-06-30T10:40:00Z",
+        "status_counts": {
+          "done": 2,
+          "running": 1,
+          "failed": 1,
+          "blocked": 1
+        },
+        "top_groups": {
+          "webui-migration": 2,
+          "ecom-ops": 1,
+          "the-mall": 1,
+          "ops": 1
+        }
+      },
+      "time_col": "source_updated_at",
+      "status_col": "status",
+      "group_col": "board_slug",
+      "error": null
+    },
+    {
+      "name": "prd_kanban_dispatch_links",
+      "label": "PRD Dispatch Links",
+      "description": "Links from PRD artifacts to dispatched Kanban tasks and agent runs.",
+      "dashboard": "kanban",
+      "rows": [
+        {
+          "prd_id": "PLAN-9119-webui",
+          "status": "active",
+          "relationship": "implements",
+          "team_id": "webui",
+          "profile": "carlos",
+          "task_id": "t-3041",
+          "run_id": "r-88210",
+          "client_slug": "gbautomation",
+          "created_at": "2026-06-30T08:00:00Z"
+        },
+        {
+          "prd_id": "PLAN-ecom-green",
+          "status": "done",
+          "relationship": "implements",
+          "team_id": "ecom",
+          "profile": "jason-operations",
+          "task_id": "t-2980",
+          "run_id": "r-87011",
+          "client_slug": "ecom",
+          "created_at": "2026-06-29T12:00:00Z"
+        },
+        {
+          "prd_id": "PLAN-mall",
+          "status": "proposed",
+          "relationship": "tracks",
+          "team_id": "ecom",
+          "profile": "jason-operations",
+          "task_id": "t-3002",
+          "run_id": null,
+          "client_slug": "the-mall",
+          "created_at": "2026-06-28T09:00:00Z"
+        }
+      ],
+      "summary": {
+        "row_count": 3,
+        "latest": "2026-06-30T08:00:00Z",
+        "status_counts": {
+          "active": 1,
+          "done": 1,
+          "proposed": 1
+        }
+      },
+      "time_col": "created_at",
+      "status_col": "status",
+      "group_col": null,
+      "error": null
+    },
+    {
+      "name": "kanban_tasks",
+      "label": "Kanban Tasks",
+      "description": "Task cards on the Hermes operator board (tenant-scoped).",
+      "dashboard": "kanban",
+      "rows": [
+        {
+          "title": "Port Supabase tab",
+          "status": "running",
+          "kind": "build",
+          "client_slug": "gbautomation",
+          "created_at": "2026-06-30T08:10:00Z"
+        },
+        {
+          "title": "Langfuse stat cards",
+          "status": "pending",
+          "kind": "build",
+          "client_slug": "gbautomation",
+          "created_at": "2026-06-30T08:20:00Z"
+        },
+        {
+          "title": "ecom backfill audit",
+          "status": "done",
+          "kind": "ops",
+          "client_slug": "ecom",
+          "created_at": "2026-06-29T15:00:00Z"
+        }
+      ],
+      "summary": {
+        "row_count": 3,
+        "latest": "2026-06-30T08:20:00Z",
+        "status_counts": {
+          "running": 1,
+          "pending": 1,
+          "done": 1
+        }
+      },
+      "time_col": "created_at",
+      "status_col": "status",
+      "group_col": null,
+      "error": null
+    },
+    {
+      "name": "agent_profiles",
+      "label": "Agent Profiles",
+      "description": "Registered agent profiles scoped to the active tenant.",
+      "dashboard": "kanban",
+      "rows": [
+        {
+          "name": "carlos",
+          "status": "active",
+          "tenant": "gbautomation",
+          "role": "orchestrator"
+        },
+        {
+          "name": "jason-operations",
+          "status": "active",
+          "tenant": "gbautomation",
+          "role": "specialist"
+        },
+        {
+          "name": "jason-marketing",
+          "status": "inactive",
+          "tenant": "gbautomation",
+          "role": "specialist"
+        }
+      ],
+      "summary": {
+        "row_count": 3,
+        "status_counts": {
+          "active": 2,
+          "inactive": 1
+        }
+      },
+      "time_col": null,
+      "status_col": "status",
+      "group_col": null,
+      "error": null
+    },
+    {
+      "name": "agent_profile_teams",
+      "label": "Profile Teams",
+      "description": "Supabase agent_profile_teams: orchestrator + specialist routing.",
+      "dashboard": "kanban",
+      "rows": [
+        {
+          "team_id": "webui",
+          "display_name": "WebUI Migration",
+          "orchestrator_profile": "carlos",
+          "tenant": "gbautomation"
+        },
+        {
+          "team_id": "ecom",
+          "display_name": "Ecom Ops",
+          "orchestrator_profile": "jason-operations",
+          "tenant": "gbautomation"
+        }
+      ],
+      "summary": {
+        "row_count": 2
+      },
+      "time_col": null,
+      "status_col": null,
+      "group_col": null,
+      "error": null
+    },
+    {
+      "name": "langfuse_traces",
+      "label": "Langfuse Traces",
+      "description": "Sanitized Langfuse trace metadata mirrored into Supabase.",
+      "dashboard": "observability",
+      "rows": [
+        {
+          "trace_name": "tac-coder.build",
+          "agent": "carlos",
+          "profile": "carlos",
+          "runtime": "claude-code",
+          "trace_timestamp": "2026-06-30T10:35:00Z",
+          "latency_sec": 42.1,
+          "total_cost": 0.182,
+          "total_tokens": 48120
+        },
+        {
+          "trace_name": "ecom-exec.run",
+          "agent": "jason-operations",
+          "profile": "jason-operations",
+          "runtime": "hermes",
+          "trace_timestamp": "2026-06-30T06:02:00Z",
+          "latency_sec": 18.7,
+          "total_cost": 0.064,
+          "total_tokens": 15230
+        },
+        {
+          "trace_name": "sprint-manager.rollup",
+          "agent": "jason-va",
+          "profile": "jason-va",
+          "runtime": "hermes",
+          "trace_timestamp": "2026-06-29T23:50:00Z",
+          "latency_sec": 9.3,
+          "total_cost": 0.021,
+          "total_tokens": 5120
+        }
+      ],
+      "summary": {
+        "row_count": 3,
+        "latest": "2026-06-30T10:35:00Z",
+        "top_groups": {
+          "carlos": 1,
+          "jason-operations": 1,
+          "jason-va": 1
+        }
+      },
+      "time_col": "trace_timestamp",
+      "status_col": null,
+      "group_col": "agent",
+      "error": null
+    },
+    {
+      "name": "agent_log_artifacts",
+      "label": "Log Artifacts",
+      "description": "Agent log artifact index (paths + categories, no bodies).",
+      "dashboard": "observability",
+      "rows": [
+        {
+          "agent": "carlos",
+          "category": "build",
+          "client_slug": "gbautomation",
+          "repo_slug": "hermes-webui",
+          "modified_at": "2026-06-30T10:36:00Z",
+          "content_mode": "reference",
+          "basename": "b9-build.log"
+        },
+        {
+          "agent": "jason-operations",
+          "category": "ops",
+          "client_slug": "ecom",
+          "repo_slug": "gbautomation",
+          "modified_at": "2026-06-30T06:05:00Z",
+          "content_mode": "reference",
+          "basename": "ecom-lane.log"
+        }
+      ],
+      "summary": {
+        "row_count": 2,
+        "latest": "2026-06-30T10:36:00Z"
+      },
+      "time_col": "modified_at",
+      "status_col": null,
+      "group_col": null,
+      "error": null
+    },
+    {
+      "name": "host_job_runs",
+      "label": "Host Job Runs",
+      "description": "Unified host receipts for Mac Mini and Windows tasks.",
+      "dashboard": "ops",
+      "rows": [
+        {
+          "job": "task-telegram-notify",
+          "status": "ok",
+          "host": "mac-mini",
+          "started_at": "2026-06-30T11:00:00Z",
+          "duration_s": 4.2,
+          "client_slug": "gbautomation"
+        },
+        {
+          "job": "commit-cleaner",
+          "status": "ok",
+          "host": "pc",
+          "started_at": "2026-06-30T10:00:00Z",
+          "duration_s": 12.8,
+          "client_slug": "gbautomation"
+        },
+        {
+          "job": "prune-retention",
+          "status": "failed",
+          "host": "mac-mini",
+          "started_at": "2026-06-29T02:00:00Z",
+          "duration_s": 1.1,
+          "client_slug": "gbautomation"
+        }
+      ],
+      "summary": {
+        "row_count": 3,
+        "latest": "2026-06-30T11:00:00Z",
+        "status_counts": {
+          "ok": 2,
+          "failed": 1
+        },
+        "top_groups": {
+          "mac-mini": 2,
+          "pc": 1
+        }
+      },
+      "time_col": "started_at",
+      "status_col": "status",
+      "group_col": "host",
+      "error": null
+    },
+    {
+      "name": "tac_test_runs",
+      "label": "TAC Test Runs",
+      "description": "TAC self-improvement suite results.",
+      "dashboard": "tac",
+      "rows": [
+        {
+          "suite": "tac-expertise",
+          "status": "passed",
+          "last_run_at": "2026-06-29T18:00:00Z",
+          "tests_total": 24,
+          "tests_passed": 24,
+          "tests_failed": 0
+        },
+        {
+          "suite": "hooks-expertise",
+          "status": "passed",
+          "last_run_at": "2026-06-28T18:00:00Z",
+          "tests_total": 18,
+          "tests_passed": 17,
+          "tests_failed": 1
+        }
+      ],
+      "summary": {
+        "row_count": 2,
+        "latest": "2026-06-29T18:00:00Z",
+        "status_counts": {
+          "passed": 2
+        }
+      },
+      "time_col": "last_run_at",
+      "status_col": "status",
+      "group_col": null,
+      "error": null
+    },
+    {
+      "name": "ecom_telemetry_backfills",
+      "label": "Ecom Telemetry Backfills",
+      "description": "Ecom telemetry backfill receipts (aggregate counts only).",
+      "dashboard": "ecom",
+      "rows": [
+        {
+          "client_slug": "ecom",
+          "status": "done",
+          "updated_at": "2026-06-30T05:00:00Z",
+          "rows_backfilled": 1420
+        },
+        {
+          "client_slug": "ecom",
+          "status": "partial",
+          "updated_at": "2026-06-29T05:00:00Z",
+          "rows_backfilled": 880
+        }
+      ],
+      "summary": {
+        "row_count": 2,
+        "latest": "2026-06-30T05:00:00Z",
+        "status_counts": {
+          "done": 1,
+          "partial": 1
+        }
+      },
+      "time_col": "updated_at",
+      "status_col": "status",
+      "group_col": null,
+      "error": null
+    }
   ],
-  "totals": {"tables": 4, "rows_estimate": 2153}
+  "totals": {
+    "tables": 10,
+    "rows": 28
+  }
 }

@@ -4594,7 +4594,7 @@ main.main > #mainWorkspaces,
 main.main > #mainProfiles,
 main.main > #mainInsights,
 main.main > #mainLogs{display:none;}
-main.main:not(.showing-home):not(.showing-overview):not(.showing-repos):not(.showing-lineage):not(.showing-documents):not(.showing-settings):not(.showing-skills):not(.showing-memory):not(.showing-tasks):not(.showing-kanban):not(.showing-workspaces):not(.showing-profiles):not(.showing-insights):not(.showing-logs):not(.showing-plugin):not(.showing-pluginhub) > #mainChat{display:flex;}
+main.main:not(.showing-home):not(.showing-overview):not(.showing-repos):not(.showing-lineage):not(.showing-documents):not(.showing-supabase):not(.showing-langfuse):not(.showing-kanbandata):not(.showing-settings):not(.showing-skills):not(.showing-memory):not(.showing-tasks):not(.showing-kanban):not(.showing-workspaces):not(.showing-profiles):not(.showing-insights):not(.showing-logs):not(.showing-plugin):not(.showing-pluginhub) > #mainChat{display:flex;}
 main.main.showing-home > #mainHome{display:flex;overflow-y:auto;}
 main.main.showing-overview > #mainOverview{display:flex;overflow-y:auto;}
 main.main > #mainOverview{display:none;}
@@ -4604,6 +4604,12 @@ main.main.showing-lineage > #mainLineage{display:flex;overflow-y:auto;}
 main.main > #mainLineage{display:none;}
 main.main.showing-documents > #mainDocuments{display:flex;overflow-y:auto;}
 main.main > #mainDocuments{display:none;}
+main.main.showing-supabase > #mainSupabase{display:flex;overflow-y:auto;}
+main.main > #mainSupabase{display:none;}
+main.main.showing-langfuse > #mainLangfuse{display:flex;overflow-y:auto;}
+main.main > #mainLangfuse{display:none;}
+main.main.showing-kanbandata > #mainKanbandata{display:flex;overflow-y:auto;}
+main.main > #mainKanbandata{display:none;}
 main.main.showing-settings > #mainSettings{display:flex;overflow-y:auto;}
 main.main.showing-skills > #mainSkills{display:flex;}
 main.main.showing-memory > #mainMemory{display:flex;}
@@ -4867,6 +4873,65 @@ main.main.showing-pluginhub > #mainPluginhub{display:flex;overflow-y:auto;}
   .documents-grid{grid-template-columns:repeat(auto-fill,minmax(180px,1fr));}
   .documents-modal-stage{grid-template-columns:1fr;height:88vh;}
   .documents-modal-side{border-left:0;border-top:1px solid var(--border);}
+}
+
+/* GBAutomation data-plane panels (plan B9): Supabase / Langfuse / Kanban-Data.
+   Shares the gbhub-* hero/badge/eyebrow classes above; adds the table/stat/chip
+   primitives the shared TableCard renderer (static/gbauto-data.js) emits.
+   terracotta (#d97757) is the canonical GBAuto SOT hex, kept literal. */
+.supabase-muted{display:block;color:var(--muted);font-size:12px;line-height:1.5;}
+.supabase-stat-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;}
+.supabase-stat-card{display:grid;gap:3px;align-content:start;padding:14px 16px;border:1px solid var(--border);border-radius:8px;background:var(--surface);box-shadow:0 1px 2px rgba(0,0,0,.04);}
+.supabase-stat-card strong{font-size:22px;font-weight:700;color:var(--text);line-height:1.1;}
+.supabase-stat-card span{color:#d97757;font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;}
+.supabase-stat-card small{color:var(--muted);font-size:11px;}
+.supabase-table-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;align-content:start;}
+.supabase-table-grid.focused{grid-template-columns:1fr;}
+.supabase-table-card{display:grid;gap:10px;align-content:start;padding:16px;border:1px solid var(--border);border-radius:8px;background:var(--surface);box-shadow:0 1px 2px rgba(0,0,0,.04);min-width:0;}
+.supabase-table-card header{display:flex;align-items:flex-start;gap:10px;}
+.supabase-table-card header > div{flex:1;min-width:0;}
+.supabase-table-card h3{margin:2px 0 4px;color:var(--text);font-family:var(--font-ui);font-size:15px;font-weight:600;}
+.supabase-table-card header p{margin:0;color:var(--muted);font-size:12px;line-height:1.45;}
+.supabase-count{flex-shrink:0;padding:2px 9px;border:1px solid var(--border);border-radius:999px;color:var(--muted);font-size:11px;font-weight:700;}
+.supabase-count.is-bad{border-color:#c0573b;color:#c0573b;}
+.supabase-card-metrics{display:flex;flex-wrap:wrap;gap:14px;color:var(--muted);font-size:11.5px;}
+.supabase-card-metrics b{color:var(--text);}
+.supabase-pill-row{display:flex;flex-wrap:wrap;gap:6px;}
+.supabase-chip{display:inline-flex;align-items:center;gap:5px;padding:2px 9px;border:1px solid var(--border);border-radius:999px;background:var(--input-bg);color:var(--muted);font-size:11px;}
+.supabase-chip b{color:var(--text);}
+.supabase-chip.good{border-color:rgba(79,157,105,.5);background:rgba(79,157,105,.12);color:#4F9D69;}
+.supabase-chip.bad{border-color:rgba(192,87,59,.5);background:rgba(192,87,59,.12);color:#c0573b;}
+.supabase-chip.warn{border-color:rgba(217,119,87,.5);background:rgba(217,119,87,.12);color:#d97757;}
+.supabase-table-wrap{overflow-x:auto;border:1px solid var(--border);border-radius:8px;}
+.supabase-table-wrap table{width:100%;border-collapse:collapse;font-size:11.5px;}
+.supabase-table-wrap th{position:sticky;top:0;padding:7px 10px;border-bottom:1px solid var(--border);background:var(--input-bg);color:var(--muted);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;text-align:left;white-space:nowrap;}
+.supabase-table-wrap td{padding:7px 10px;border-bottom:1px solid var(--border);color:var(--text);vertical-align:top;white-space:nowrap;max-width:280px;overflow:hidden;text-overflow:ellipsis;}
+.supabase-table-wrap tr:last-child td{border-bottom:0;}
+.supabase-empty{padding:18px 12px;border:1px dashed var(--border);border-radius:8px;background:var(--input-bg);color:var(--muted);text-align:center;font-size:12px;}
+.supabase-contract-card{display:grid;gap:8px;padding:12px;border:1px solid var(--border);border-radius:8px;background:var(--input-bg);font-size:11.5px;}
+.supabase-contract-card.is-empty{color:var(--muted);}
+.supabase-contract-card.is-empty strong{color:var(--text);font-size:12.5px;}
+.supabase-contract-topline{display:flex;gap:8px;color:#d97757;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;}
+.supabase-contract-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;}
+.supabase-contract-grid span{display:grid;gap:1px;color:var(--text);}
+.supabase-contract-grid b{color:var(--muted);font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.03em;}
+.supabase-contract-paths{display:grid;gap:5px;margin:0;}
+.supabase-contract-paths div{display:grid;gap:1px;}
+.supabase-contract-paths dt{color:var(--muted);font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.03em;}
+.supabase-contract-paths dd{margin:0;color:var(--text);font-size:11px;word-break:break-word;}
+.supabase-contract-note{margin:0;color:var(--muted);font-size:11px;line-height:1.45;}
+.supabase-health-pane{display:grid;gap:12px;padding:16px;border:1px solid var(--border);border-radius:8px;background:var(--surface);box-shadow:0 1px 2px rgba(0,0,0,.04);}
+.supabase-health-head{display:flex;flex-wrap:wrap;align-items:flex-start;justify-content:space-between;gap:12px;}
+.supabase-health-head h3{margin:2px 0 0;color:var(--text);font-family:var(--font-ui);font-size:14px;font-weight:600;}
+.supabase-health-summary{display:flex;flex-wrap:wrap;gap:14px;color:var(--muted);font-size:11.5px;}
+.supabase-health-summary b{color:var(--text);}
+@media (max-width:1024px){
+  .supabase-stat-grid{grid-template-columns:repeat(2,minmax(0,1fr));}
+  .supabase-table-grid{grid-template-columns:1fr;}
+}
+@media (max-width:640px){
+  .supabase-stat-grid{grid-template-columns:1fr;}
+  .supabase-contract-grid{grid-template-columns:1fr;}
 }
 
 /* Sidebar menu (lives in the left sidebar under the cog panel) */
