@@ -9,9 +9,22 @@
     "generated_at": "2026-06-30T00:00:00Z",
     "source": "SAMPLE FIXTURE -- regenerate via the gbauto-github-index generator into HERMES_SNAPSHOT_ROOT"
   },
+  "window_days": 14,
+  "repo_count": 3,
+  "client_count": 3,
+  "commit_count": 6,
   "repos": [
     {"name": "hermes-webui", "owner": "gblack686", "language": "Python", "stars": 0, "topics": ["dashboard", "hermes"], "last_commit_at": "2026-06-30T00:00:00Z"},
-    {"name": "gbautomation", "owner": "gblack686", "language": "Python", "stars": 0, "topics": ["second-brain", "agents"], "last_commit_at": "2026-06-29T00:00:00Z"}
+    {"name": "gbautomation", "owner": "gblack686", "language": "Python", "stars": 0, "topics": ["second-brain", "agents"], "last_commit_at": "2026-06-29T00:00:00Z"},
+    {"name": "hermes-agent", "owner": "gblack686", "language": "Python", "stars": 0, "topics": ["agent", "hermes"], "last_commit_at": "2026-06-28T00:00:00Z"}
   ],
-  "totals": {"repos": 2}
+  "recent_activity": [
+    {"client": "gbautomation", "repo": "hermes-webui", "sha": "a1b2c3d", "date": "2026-06-30T02:52:00Z", "message": "Add gbauto static-snapshot serving (B0a)"},
+    {"client": "gbautomation", "repo": "hermes-webui", "sha": "b2c3d4e", "date": "2026-06-30T02:17:00Z", "message": "Add Home panel as a chat front door (B1)"},
+    {"client": "gbautomation", "repo": "gbautomation", "sha": "c3d4e5f", "date": "2026-06-29T18:00:00Z", "message": "Write 9119 -> webui migration plan"},
+    {"client": "ecom", "repo": "hermes-agent", "sha": "d4e5f6a", "date": "2026-06-28T12:00:00Z", "message": "Hourly lane persistence for ecom scanners"},
+    {"client": "the-mall", "repo": "hermes-agent", "sha": "e5f6a7b", "date": "2026-06-27T09:30:00Z", "message": "Mall scraper deploy refresh"},
+    {"client": "fish-group", "repo": "gbautomation", "sha": "f6a7b8c", "date": "2026-06-26T15:45:00Z", "message": "Client portal activity tab polish"}
+  ],
+  "totals": {"repos": 3}
 }

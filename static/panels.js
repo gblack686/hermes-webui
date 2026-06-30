@@ -41,7 +41,7 @@ const APP_TITLEBAR_KEYS = {
   memory: 'tab_memory', workspaces: 'tab_workspaces',
   profiles: 'tab_profiles', todos: 'tab_todos', insights: 'tab_insights', logs: 'tab_logs', settings: 'tab_settings',
 };
-const MAIN_VIEW_PANELS = ['home','settings','skills','memory','tasks','kanban','workspaces','profiles','insights','logs','plugin','pluginhub'];
+const MAIN_VIEW_PANELS = ['home','overview','settings','skills','memory','tasks','kanban','workspaces','profiles','insights','logs','plugin','pluginhub'];
 const MAIN_VIEW_SIDEBAR_PANEL_FALLBACKS = { plugin: 'settings' };
 
 /**
@@ -314,6 +314,7 @@ async function switchPanel(name, opts = {}) {
   }
   // Lazy-load panel data
   if (nextPanel === 'home') _focusHomeComposer();
+  if (nextPanel === 'overview') await loadOverview();
   if (nextPanel === 'tasks') await loadCrons();
   if (nextPanel === 'kanban') await loadKanban();
   if (nextPanel === 'skills') await loadSkills();
@@ -388,6 +389,199 @@ function homeQuickPrompt(btn){
   if (!btn) return;
   const text = (btn.dataset && btn.dataset.prompt) || btn.textContent || '';
   homeStartChat(text);
+}
+
+// ── GBAutomation Overview panel (plan B5) ──
+// Pure-frontend port of 9119's GbAutomationOverviewPage. Fetches three static
+// snapshots served by B0a (api/snapshot.py): the repos, prds and dags manifests.
+// No backend, no 9119 token scheme. Spoke/stat links point at existing webui
+// panels where they exist (logs -> Observability, pluginhub -> Apps & Plugins);
+// surfaces without a webui panel yet (Repos B6, Artifacts B8) render as muted
+// "coming soon" cards rather than dead links.
+
+// Tenant scoping ported from 9119's TENANT_CLIENT_ALIASES / client_slug model.
+// Snapshots are pre-scoped to a tenant AT GENERATION TIME (see api/snapshot.py);
+// this is the client-side guard that keeps the operator hub from surfacing rows
+// outside the active tenant's client aliases. REQUIRED per plan decision #6.
+const OVERVIEW_TENANT_CLIENT_ALIASES = {
+  gbautomation: ['ecom','eagle-app','fish-group','gbautomation','greg-trading','jason-diaz','the-mall'],
+  ecom: ['ecom'],
+  jid5274: ['jid5274'],
+  'smoke-client': ['smoke-client'],
+};
+const OVERVIEW_CLIENT_COLORS = {
+  ecom: '#3b82f6',
+  'eagle-app': '#C08A3E',
+  'fish-group': '#8A5FBF',
+  gbautomation: '#D97757',
+  'greg-trading': '#4F9D69',
+  'jason-diaz': '#06b6d4',
+  'the-mall': '#ec4899',
+};
+let _overviewLoaded = false;
+
+function _ovEsc(v){
+  if (typeof esc === 'function') return esc(v);
+  return String(v == null ? '' : v).replace(/[&<>"']/g, (c) => (
+    { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]
+  ));
+}
+function _overviewActiveTenant(meta){
+  return (meta && (meta.client_slug || meta.tenant)) || 'gbautomation';
+}
+function _overviewTenantAllows(tenant, client){
+  const aliases = OVERVIEW_TENANT_CLIENT_ALIASES[tenant];
+  if (!aliases) return true; // unknown tenant -> trust the pre-scoped snapshot
+  if (!client) return true;
+  return aliases.indexOf(client) !== -1;
+}
+function _overviewClientColor(client){
+  return OVERVIEW_CLIENT_COLORS[client] || '#6b6b6b';
+}
+function _overviewRelativeTime(value){
+  if (!value) return '';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return '';
+  const days = Math.floor((Date.now() - date.getTime()) / 86400000);
+  if (days <= 0) return 'today';
+  if (days === 1) return 'yesterday';
+  if (days < 30) return `${days}d ago`;
+  try {
+    return new Intl.DateTimeFormat(undefined, { day: 'numeric', month: 'short' }).format(date);
+  } catch (_e) { return ''; }
+}
+async function _overviewFetchJson(url){
+  try {
+    const res = await fetch(url, { headers: { Accept: 'application/json' } });
+    if (!res.ok) return null;
+    return await res.json();
+  } catch (_e) { return null; }
+}
+function _overviewStatCard({ accent, label, sub, panel, value }){
+  const clickable = panel && MAIN_VIEW_PANELS.indexOf(panel) !== -1;
+  const tag = clickable ? 'button' : 'div';
+  const onclick = clickable ? ` onclick="switchPanel('${_ovEsc(panel)}')"` : '';
+  const cls = clickable ? 'gbhub-stat-card' : 'gbhub-stat-card gbhub-stat-card--static';
+  return `<${tag} type="button" class="${cls}"${onclick}>`
+    + `<strong>${_ovEsc(value)}</strong>`
+    + `<span style="color:${_ovEsc(accent)}">${_ovEsc(label)}</span>`
+    + (sub ? `<small>${_ovEsc(sub)}</small>` : '')
+    + `</${tag}>`;
+}
+function _overviewSpokeCard(spoke){
+  const clickable = spoke.panel && MAIN_VIEW_PANELS.indexOf(spoke.panel) !== -1;
+  const tag = clickable ? 'button' : 'div';
+  const onclick = clickable ? ` onclick="switchPanel('${_ovEsc(spoke.panel)}')"` : '';
+  const cls = clickable ? 'gbhub-spoke-card' : 'gbhub-spoke-card gbhub-spoke-card--static';
+  const soon = clickable ? '' : '<small class="gbhub-soon">coming soon</small>';
+  return `<${tag} type="button" class="${cls}"${onclick}>`
+    + `<span class="gbhub-spoke-icon">${spoke.icon}</span>`
+    + `<span><strong>${_ovEsc(spoke.label)}</strong><small>${_ovEsc(spoke.desc)}</small>${soon}</span>`
+    + `</${tag}>`;
+}
+function _overviewPrds(prds){
+  // B0a fixture ships {prds:[...]}; the 9119 manifest was a bare array. Accept both.
+  if (Array.isArray(prds)) return prds;
+  if (prds && Array.isArray(prds.prds)) return prds.prds;
+  return [];
+}
+function _overviewDags(dags){
+  if (Array.isArray(dags)) return dags;
+  if (dags && Array.isArray(dags.dags)) return dags.dags;
+  return [];
+}
+function renderOverview(data){
+  const container = document.getElementById('overviewContent');
+  if (!container) return;
+  const repos = data.repos || null;
+  const prds = _overviewPrds(data.prds);
+  const dags = _overviewDags(data.dags);
+  const meta = (repos && repos._meta) || (data.prds && data.prds._meta) || {};
+  const tenant = _overviewActiveTenant(meta);
+
+  const ICON_GIT = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="6" y1="3" x2="6" y2="15"/><circle cx="18" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M18 9a9 9 0 0 1-9 9"/></svg>';
+  const ICON_FILE = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>';
+  const ICON_ACT = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>';
+  const ICON_BOX = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/></svg>';
+  const ICON_NET = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="5" r="2"/><circle cx="5" cy="19" r="2"/><circle cx="19" cy="19" r="2"/><path d="M12 7v4"/><path d="M12 11 5 17"/><path d="M12 11l7 6"/></svg>';
+
+  const spokes = [
+    { panel: 'repos', label: 'Repos & Commits', desc: 'Plan to commit traceability', icon: ICON_GIT },
+    { panel: 'artifacts', label: 'Artifacts', desc: 'HTML, page views, reports, PRDs, and visuals', icon: ICON_FILE },
+    { panel: 'logs', label: 'Observability', desc: 'Agent runs, traces, logs, and telemetry', icon: ICON_ACT },
+    { panel: 'pluginhub', label: 'Apps & Plugins', desc: 'Mini-apps, integrations, and installed surfaces', icon: ICON_BOX },
+  ];
+
+  const reposVal = repos || {};
+  const commitCount = reposVal.commit_count != null ? reposVal.commit_count : '-';
+  const repoCount = reposVal.repo_count != null ? reposVal.repo_count : (reposVal.totals && reposVal.totals.repos != null ? reposVal.totals.repos : '-');
+  const clientCount = reposVal.client_count != null ? reposVal.client_count : null;
+  const windowDays = reposVal.window_days != null ? reposVal.window_days : null;
+
+  const recentActivity = (Array.isArray(reposVal.recent_activity) ? reposVal.recent_activity : [])
+    .filter((c) => _overviewTenantAllows(tenant, c && c.client))
+    .slice(0, 14);
+
+  const heroBadge = `<span class="gbhub-badge">`
+    + `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v18"/><path d="M3 12h18"/><path d="m6 6 12 12"/><path d="m18 6-12 12"/></svg>`
+    + `Hermes hub</span>`;
+
+  const tenantLine = `<small class="gbhub-tenant">Tenant scope: <strong>${_ovEsc(tenant)}</strong>`
+    + (meta.generated_at ? ` &middot; snapshot ${_ovEsc(_overviewRelativeTime(meta.generated_at) || meta.generated_at)}` : '')
+    + `</small>`;
+
+  const statGrid = [
+    _overviewStatCard({ accent: '#D97757', label: 'Commits', sub: (windowDays != null ? `last ${windowDays}d` : (repos ? 'tracked' : 'loading')), panel: 'repos', value: commitCount }),
+    _overviewStatCard({ accent: '#8A5FBF', label: 'Repos', sub: (clientCount != null ? `${clientCount} clients` : (repos ? 'catalog' : 'loading')), panel: 'repos', value: repoCount }),
+    _overviewStatCard({ accent: '#06b6d4', label: 'PRDs & Plans', sub: 'strategy artifacts', panel: 'artifacts', value: prds.length || '-' }),
+    _overviewStatCard({ accent: '#4F9D69', label: 'Agent DAGs', sub: 'Langfuse traces', panel: 'logs', value: dags.length || '-' }),
+  ].join('');
+
+  const activityList = recentActivity.length
+    ? `<ul>${recentActivity.map((c) => (
+        `<li><div>`
+        + `<span class="gbhub-client-dot" style="background:${_ovEsc(_overviewClientColor(c.client))}"></span>`
+        + `<span>${_ovEsc(c.repo)}</span>`
+        + `<time>${_ovEsc(_overviewRelativeTime(c.date))}</time>`
+        + `</div><p>${_ovEsc(c.message)}</p></li>`
+      )).join('')}</ul>`
+    : `<p class="gbhub-muted">${repos ? 'No repo activity in scope.' : 'Loading repo activity...'}</p>`;
+
+  const dagStrip = dags.length
+    ? `<section class="gbhub-dag-strip"><p class="gbhub-eyebrow">Agent Graphs</p><div>`
+      + dags.map((d) => (
+        `<article>${ICON_NET}<strong>${_ovEsc(d.title || d.slug)}</strong>`
+        + `<span>${_ovEsc(d.agent_count != null ? d.agent_count : 0)} agents, ${_ovEsc(d.node_count != null ? d.node_count : 0)} nodes</span></article>`
+      )).join('')
+      + `</div></section>`
+    : '';
+
+  container.innerHTML = ''
+    + `<section class="gbhub-hero">`
+    +   `<div class="gbhub-brand-row"><span class="gbhub-mark">gb</span><span>GBAutomation</span></div>`
+    +   heroBadge
+    +   `<h2>Operations Overview</h2>`
+    +   `<p>Live status across the build pipeline: what shipped, what is tracked, and where the work is happening. Every number is backed by a local static index served from the snapshot root.</p>`
+    +   tenantLine
+    + `</section>`
+    + `<section class="gbhub-stat-grid" aria-label="GBAutomation overview stats">${statGrid}</section>`
+    + `<div class="gbhub-two-column">`
+    +   `<section><p class="gbhub-eyebrow">Workspace</p><div class="gbhub-spoke-grid">${spokes.map(_overviewSpokeCard).join('')}</div></section>`
+    +   `<aside class="gbhub-activity-panel"><p class="gbhub-eyebrow">Recent Activity</p>${activityList}</aside>`
+    + `</div>`
+    + dagStrip;
+}
+async function loadOverview(force){
+  const container = document.getElementById('overviewContent');
+  if (!container) return;
+  if (_overviewLoaded && !force) return;
+  const [repos, prds, dags] = await Promise.all([
+    _overviewFetchJson('/repos/repos-manifest.json'),
+    _overviewFetchJson('/prds/prds-manifest.json'),
+    _overviewFetchJson('/observability/dags/dags-manifest.json'),
+  ]);
+  renderOverview({ repos, prds, dags });
+  _overviewLoaded = true;
 }
 
 // ── Cron panel ──
