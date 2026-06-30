@@ -41,7 +41,7 @@ const APP_TITLEBAR_KEYS = {
   memory: 'tab_memory', workspaces: 'tab_workspaces',
   profiles: 'tab_profiles', todos: 'tab_todos', insights: 'tab_insights', logs: 'tab_logs', settings: 'tab_settings',
 };
-const MAIN_VIEW_PANELS = ['settings','skills','memory','tasks','kanban','workspaces','profiles','insights','logs','plugin'];
+const MAIN_VIEW_PANELS = ['home','settings','skills','memory','tasks','kanban','workspaces','profiles','insights','logs','plugin'];
 const MAIN_VIEW_SIDEBAR_PANEL_FALLBACKS = { plugin: 'settings' };
 
 /**
@@ -313,6 +313,7 @@ async function switchPanel(name, opts = {}) {
     });
   }
   // Lazy-load panel data
+  if (nextPanel === 'home') _focusHomeComposer();
   if (nextPanel === 'tasks') await loadCrons();
   if (nextPanel === 'kanban') await loadKanban();
   if (nextPanel === 'skills') await loadSkills();
@@ -339,6 +340,53 @@ async function switchPanel(name, opts = {}) {
   if (nextPanel === 'chat' && typeof syncTopbar === 'function') syncTopbar();
   else syncAppTitlebar();
   return true;
+}
+
+// ── Home panel (chat front door) ──
+// The Home panel is a thin landing that funnels straight into webui's existing
+// chat-start path. It owns no backend: submitting drops the text into the real
+// chat composer ($('msg')) and calls send(), reusing all session bootstrap +
+// streaming logic. Quick-prompt chips do the same. No 9119 token scheme, no new
+// route — pure frontend per plan item B1.
+function _homeComposerEl(){
+  return (typeof $ === 'function' && $('homeComposer')) || document.getElementById('homeComposer');
+}
+function homeSyncSubmit(){
+  const ta = _homeComposerEl();
+  const btn = (typeof $ === 'function' && $('homeSubmitBtn')) || document.getElementById('homeSubmitBtn');
+  if (ta && btn) btn.disabled = !String(ta.value || '').trim();
+}
+function _focusHomeComposer(){
+  homeSyncSubmit();
+  const ta = _homeComposerEl();
+  if (ta && typeof _isDesktopWidth === 'function' && _isDesktopWidth()) {
+    try { ta.focus(); } catch (_e) {}
+  }
+}
+async function homeStartChat(text){
+  const value = String(text || '').trim();
+  if (!value) return;
+  // Move to the chat surface, hand the text to the canonical composer, send.
+  if (typeof switchPanel === 'function') await switchPanel('chat');
+  const msg = (typeof $ === 'function' && $('msg')) || document.getElementById('msg');
+  if (!msg) return;
+  msg.value = value;
+  if (typeof autoResize === 'function') { try { autoResize(); } catch (_e) {} }
+  try { msg.focus(); } catch (_e) {}
+  const ta = _homeComposerEl();
+  if (ta) { ta.value = ''; homeSyncSubmit(); }
+  if (typeof send === 'function') await send();
+}
+function homeSubmit(event){
+  if (event && typeof event.preventDefault === 'function') event.preventDefault();
+  const ta = _homeComposerEl();
+  homeStartChat(ta ? ta.value : '');
+  return false;
+}
+function homeQuickPrompt(btn){
+  if (!btn) return;
+  const text = (btn.dataset && btn.dataset.prompt) || btn.textContent || '';
+  homeStartChat(text);
 }
 
 // ── Cron panel ──
