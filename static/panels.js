@@ -41,7 +41,7 @@ const APP_TITLEBAR_KEYS = {
   memory: 'tab_memory', workspaces: 'tab_workspaces',
   profiles: 'tab_profiles', todos: 'tab_todos', insights: 'tab_insights', logs: 'tab_logs', settings: 'tab_settings',
 };
-const MAIN_VIEW_PANELS = ['home','overview','repos','lineage','documents','supabase','langfuse','kanbandata','agentconfig','settings','skills','memory','tasks','kanban','workspaces','profiles','insights','logs','plugin','pluginhub'];
+const MAIN_VIEW_PANELS = ['home','overview','repos','lineage','documents','supabase','langfuse','kanbandata','agentconfig','env','settings','skills','memory','tasks','kanban','workspaces','profiles','insights','logs','plugin','pluginhub'];
 const MAIN_VIEW_SIDEBAR_PANEL_FALLBACKS = { plugin: 'settings' };
 
 /**
@@ -322,6 +322,7 @@ async function switchPanel(name, opts = {}) {
   if (nextPanel === 'langfuse' && typeof loadLangfuseData === 'function') loadLangfuseData();
   if (nextPanel === 'kanbandata' && typeof loadKanbanData === 'function') loadKanbanData();
   if (nextPanel === 'agentconfig' && typeof loadAgentConfig === 'function') await loadAgentConfig();
+  if (nextPanel === 'env' && typeof loadEnv === 'function') await loadEnv();
   if (nextPanel === 'tasks') await loadCrons();
   if (nextPanel === 'kanban') await loadKanban();
   if (nextPanel === 'skills') await loadSkills();

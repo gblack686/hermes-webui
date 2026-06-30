@@ -4594,8 +4594,46 @@ main.main > #mainWorkspaces,
 main.main > #mainProfiles,
 main.main > #mainInsights,
 main.main > #mainLogs{display:none;}
-main.main:not(.showing-home):not(.showing-overview):not(.showing-repos):not(.showing-lineage):not(.showing-documents):not(.showing-supabase):not(.showing-langfuse):not(.showing-kanbandata):not(.showing-agentconfig):not(.showing-settings):not(.showing-skills):not(.showing-memory):not(.showing-tasks):not(.showing-kanban):not(.showing-workspaces):not(.showing-profiles):not(.showing-insights):not(.showing-logs):not(.showing-plugin):not(.showing-pluginhub) > #mainChat{display:flex;}
+main.main:not(.showing-home):not(.showing-overview):not(.showing-repos):not(.showing-lineage):not(.showing-documents):not(.showing-supabase):not(.showing-langfuse):not(.showing-kanbandata):not(.showing-agentconfig):not(.showing-env):not(.showing-settings):not(.showing-skills):not(.showing-memory):not(.showing-tasks):not(.showing-kanban):not(.showing-workspaces):not(.showing-profiles):not(.showing-insights):not(.showing-logs):not(.showing-plugin):not(.showing-pluginhub) > #mainChat{display:flex;}
 main.main.showing-agentconfig > #mainAgentconfig{display:flex;overflow-y:auto;}
+main.main.showing-env > #mainEnv{display:flex;overflow-y:auto;}
+/* ── Keys / Env tab (B3) ── */
+#mainEnv .env-content{padding:16px;display:flex;flex-direction:column;gap:14px;max-width:920px;width:100%;}
+.env-status{color:var(--muted);font-size:12px;margin-top:2px;}
+.env-intro{color:var(--muted);font-size:12px;}
+.env-card{border:1px solid var(--border2,var(--border));border-radius:8px;overflow:hidden;}
+.env-card-head{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:10px 12px;border-bottom:1px solid var(--border2,var(--border));background:var(--panel2,transparent);}
+.env-card-title{font-weight:600;font-size:13px;}
+.env-card-meta{color:var(--muted);font-size:11px;}
+.env-card-body{padding:10px 12px;display:flex;flex-direction:column;gap:8px;}
+.env-groups{gap:6px;}
+.env-group{border:1px solid var(--border2,var(--border));border-radius:6px;overflow:hidden;}
+.env-group-head{display:flex;align-items:center;gap:8px;width:100%;padding:8px 10px;background:none;border:0;cursor:pointer;color:var(--text);text-align:left;font-size:13px;}
+.env-group-head:hover{background:var(--hover,rgba(127,127,127,.08));}
+.env-group-caret{color:var(--muted);font-size:11px;}
+.env-group-name{font-weight:600;}
+.env-group-body{border-top:1px solid var(--border2,var(--border));padding:8px 10px;display:flex;flex-direction:column;gap:6px;}
+.env-row{display:flex;flex-direction:column;gap:6px;border:1px solid var(--border2,var(--border));border-radius:6px;padding:10px;}
+.env-row-compact{flex-direction:row;align-items:center;justify-content:space-between;border:0;padding:4px 0;opacity:.7;}
+.env-row-compact:hover{opacity:1;}
+.env-row-meta{display:flex;align-items:center;gap:8px;min-width:0;flex-wrap:wrap;}
+.env-row-head{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+.env-key{font-family:var(--mono,monospace);font-size:12px;}
+.env-desc{color:var(--muted);font-size:11px;}
+.env-tools{display:flex;flex-wrap:wrap;gap:4px;}
+.env-tool{font-size:10px;border:1px solid var(--border2,var(--border));border-radius:4px;padding:1px 5px;color:var(--muted);}
+.env-row-actions{display:flex;align-items:center;gap:6px;flex-shrink:0;}
+.env-row-value{display:flex;align-items:center;gap:6px;flex-wrap:wrap;}
+.env-value{flex:1;min-width:120px;border:1px solid var(--border2,var(--border));border-radius:5px;padding:6px 8px;font-family:var(--mono,monospace);font-size:12px;color:var(--muted);background:var(--panel2,transparent);overflow-wrap:anywhere;}
+.env-value-revealed{color:var(--text);user-select:all;}
+.env-input{flex:1;min-width:160px;border:1px solid var(--border2,var(--border));border-radius:5px;padding:6px 8px;font-family:var(--mono,monospace);font-size:12px;background:var(--bg,transparent);color:var(--text);}
+.env-badge{font-size:10px;border-radius:4px;padding:1px 6px;}
+.env-badge-set{background:rgba(40,170,90,.15);color:#2a9d57;}
+.env-badge-unset{border:1px solid var(--border2,var(--border));color:var(--muted);}
+.env-getkey{font-size:11px;color:var(--accent,#4a8);text-decoration:none;}
+.env-getkey:hover{text-decoration:underline;}
+.env-collapse-toggle{align-self:flex-start;background:none;border:0;color:var(--muted);font-size:12px;cursor:pointer;padding:4px 0;}
+.env-collapse-toggle:hover{color:var(--text);}
 /* ── Agent Config schema editor (B2) ── */
 #mainAgentconfig{flex-direction:column;}
 #agentConfigRoot{display:flex;flex-direction:column;gap:12px;padding:16px;width:100%;max-width:1100px;margin:0 auto;}
