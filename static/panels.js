@@ -41,7 +41,7 @@ const APP_TITLEBAR_KEYS = {
   memory: 'tab_memory', workspaces: 'tab_workspaces',
   profiles: 'tab_profiles', todos: 'tab_todos', insights: 'tab_insights', logs: 'tab_logs', settings: 'tab_settings',
 };
-const MAIN_VIEW_PANELS = ['home','overview','repos','lineage','documents','supabase','langfuse','kanbandata','agentconfig','env','settings','skills','memory','tasks','kanban','workspaces','profiles','profilescatalog','insights','logs','plugin','pluginhub'];
+const MAIN_VIEW_PANELS = ['home','overview','repos','lineage','documents','supabase','langfuse','kanbandata','agentconfig','env','settings','skills','memory','tasks','kanban','workspaces','profiles','profilescatalog','achievements','insights','logs','plugin','pluginhub'];
 const MAIN_VIEW_SIDEBAR_PANEL_FALLBACKS = { plugin: 'settings' };
 
 /**
@@ -330,6 +330,7 @@ async function switchPanel(name, opts = {}) {
   if (nextPanel === 'workspaces') await loadWorkspacesPanel();
   if (nextPanel === 'profiles') await loadProfilesPanel();
   if (nextPanel === 'profilescatalog' && typeof loadProfilesCatalog === 'function') loadProfilesCatalog();
+  if (nextPanel === 'achievements' && typeof loadAchievements === 'function') loadAchievements();
   if (nextPanel === 'todos') loadTodos();
   if (nextPanel === 'insights') await loadInsights();
   if (nextPanel === 'logs') await loadLogs();

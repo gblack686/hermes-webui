@@ -10479,6 +10479,16 @@ def handle_get(handler, parsed) -> bool:
         return _handle_sankey_tables(handler, parsed)
     if parsed.path == "/api/plugins/sankey-explorer/chart":
         return _handle_sankey_chart(handler, parsed)
+    if parsed.path.startswith("/api/plugins/hermes-achievements/"):
+        # Native port of 9119's hermes-achievements plugin (plan B11). Gated on
+        # WebUI's OWN auth (_sankey_auth_ok); scans webui's JSON session store.
+        if not _sankey_auth_ok(handler):
+            return bad(handler, "Authentication required", status=401) or True
+        from api.achievements import handle_achievements_get
+
+        if handle_achievements_get(handler, parsed) is False:
+            return bad(handler, "unknown achievements endpoint", status=404) or True
+        return True
     if parsed.path == "/api/agent-config":
         return _handle_agent_config_get(handler, parsed)
     if parsed.path == "/api/agent-config/schema":
@@ -12143,6 +12153,18 @@ def handle_post(handler, parsed) -> bool:
             ))
         except PluginManagementUnavailable as exc:
             return bad(handler, str(exc), status=503)
+    if parsed.path.startswith("/api/plugins/hermes-achievements/"):
+        # hermes-achievements plugin port (plan B11): /rescan + /reset-state.
+        # Matched BEFORE the generic /api/plugins/ management dispatch below
+        # (which would otherwise 404 these as unknown plugin actions). Gated on
+        # WebUI's OWN auth (_sankey_auth_ok).
+        if not _sankey_auth_ok(handler):
+            return bad(handler, "Authentication required", status=401) or True
+        from api.achievements import handle_achievements_post
+
+        if handle_achievements_post(handler, parsed, body) is False:
+            return bad(handler, "unknown achievements endpoint", status=404) or True
+        return True
     if parsed.path.startswith("/api/plugins/"):
         return _handle_plugin_mgmt_post(handler, parsed, body)
 

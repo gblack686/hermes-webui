@@ -7167,3 +7167,47 @@ html[data-conversation-outline="enabled"] #outlineToggleBtn:not([hidden]){displa
 .pcat-report-actions{display:flex;gap:10px;flex-wrap:wrap;}
 .pcat-report-actions a{color:#d97757;font-size:12px;font-weight:600;}
 .pcat-report-frame{width:100%;min-height:520px;border:1px solid var(--border);border-radius:6px;background:#fff;}
+
+/* ── Achievements panel (plan B11) ─────────────────────────────────────────
+   Steam-style badge grid rendered by achievements.js from api/achievements.py.
+   Uses the shared theme tokens so it tracks light/dark + brand skins. */
+.ach-summary{display:flex;flex-wrap:wrap;align-items:center;gap:18px;padding:14px 16px;margin:0 0 18px;background:var(--panel-soft);border:1px solid var(--border);border-radius:var(--radius-card,10px);}
+.ach-stat{display:flex;flex-direction:column;line-height:1.1;}
+.ach-stat b{font-size:20px;color:var(--text);}
+.ach-stat span{font-size:11px;text-transform:uppercase;letter-spacing:.04em;color:var(--text-secondary);}
+.ach-summary-note{margin-left:auto;}
+.ach-pill{display:inline-block;padding:3px 10px;border-radius:999px;font-size:11px;font-weight:600;}
+.ach-pill--run{background:var(--accent-bg);color:var(--accent-text,var(--accent));}
+.ach-pill--stale{background:var(--accent-bg-soft,var(--accent-bg));color:var(--text-secondary);}
+.ach-pill--err{background:rgba(220,90,80,.16);color:var(--danger,var(--error));}
+.ach-filters{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 18px;}
+.ach-filter{padding:5px 14px;border:1px solid var(--border);border-radius:999px;background:transparent;color:var(--text-secondary);font-size:12px;font-weight:600;cursor:pointer;}
+.ach-filter:hover{background:var(--hover,var(--hover-bg));color:var(--text);}
+.ach-filter.is-active{background:var(--accent);border-color:var(--accent);color:#fff;}
+.ach-group{margin:0 0 26px;}
+.ach-group-title{display:flex;align-items:center;gap:8px;font-size:14px;font-weight:700;color:var(--text);margin:0 0 12px;}
+.ach-group-count{font-size:11px;font-weight:600;color:var(--text-secondary);background:var(--panel-soft);border:1px solid var(--border);border-radius:999px;padding:1px 8px;}
+.ach-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px;}
+.ach-card{display:flex;flex-direction:column;gap:8px;padding:14px;border:1px solid var(--border);border-radius:var(--radius-card,10px);background:var(--panel);}
+.ach-card--discovered{opacity:.92;}
+.ach-card--secret{opacity:.72;border-style:dashed;}
+.ach-card--unlocked{border-color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent-bg);}
+.ach-card-head{display:flex;align-items:flex-start;gap:10px;}
+.ach-badge{flex:0 0 auto;width:30px;height:30px;display:flex;align-items:center;justify-content:center;border-radius:8px;font-size:16px;background:var(--panel-soft);color:var(--text-secondary);}
+.ach-card--unlocked .ach-badge{background:var(--accent-bg);color:var(--accent-text,var(--accent));}
+.ach-card-title{display:flex;flex-direction:column;gap:3px;min-width:0;}
+.ach-card-title h4{margin:0;font-size:13px;font-weight:700;color:var(--text);}
+.ach-tier{align-self:flex-start;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;padding:1px 7px;border-radius:999px;background:var(--panel-soft);color:var(--text-secondary);border:1px solid var(--border);}
+.ach-tier--copper{background:rgba(184,115,51,.18);color:#b87333;}
+.ach-tier--silver{background:rgba(160,165,170,.20);color:#8a9098;}
+.ach-tier--gold{background:rgba(212,160,40,.20);color:var(--gold,#d4a028);}
+.ach-tier--diamond{background:rgba(90,170,210,.20);color:#54a6cf;}
+.ach-tier--olympian{background:rgba(150,100,220,.20);color:#9b6bdc;}
+.ach-desc{margin:0;font-size:12px;line-height:1.45;color:var(--text-secondary);}
+.ach-progress{display:flex;align-items:center;gap:8px;}
+.ach-progress-track{flex:1;height:6px;border-radius:999px;background:var(--panel-soft);overflow:hidden;}
+.ach-progress-fill{height:100%;border-radius:999px;background:var(--accent);transition:width .3s ease;}
+.ach-card--unlocked .ach-progress-fill{background:var(--success,var(--accent));}
+.ach-progress-label{flex:0 0 auto;font-size:10px;color:var(--text-secondary);white-space:nowrap;}
+.ach-crit{margin:0;font-size:10px;line-height:1.4;color:var(--text-secondary);opacity:.85;}
+#achievementsRescanBtn.is-busy{opacity:.5;pointer-events:none;}
