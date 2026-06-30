@@ -137,17 +137,23 @@ def test_outline_js_exposes_jump_helper_on_window():
 
 
 def test_sessions_js_search_click_calls_window_jump_helper():
-    """The search-result click path must invoke the jump helper via the
-    cross-<script> window handle, NOT the bare in-scope name (which doesn't
-    exist in sessions.js's scope and would silently do nothing)."""
+    """The search-result click path must invoke the FULL-SESSION jump helper via
+    the cross-<script> window handle, NOT the bare in-scope name (which doesn't
+    exist in sessions.js's scope and would silently do nothing).
+
+    As of #5106 the search path uses ``window._jumpToFullSessionMessage`` (the
+    full-session-index variant) rather than ``window._jumpToMessage`` (which
+    expects a LOCAL render-window index) — match_message_idx is a full-session
+    index, and treating it as local flashed the WRONG row in truncated sessions.
+    """
     src = _SESSIONS_JS.read_text()
     # The dispatch is gated on a content match carrying an integer index.
     assert "s.match_type==='content'" in src
     assert "Number.isInteger(s.match_message_idx)" in src
-    # And it must call the helper through window (the reachable handle).
-    assert "window._jumpToMessage(" in src, (
-        "sessions.js must call window._jumpToMessage (reachable across scripts), "
-        "not a bare _jumpToMessage (trapped inside outline.js's IIFE)"
+    # And it must call the full-session helper through window (the reachable handle).
+    assert "window._jumpToFullSessionMessage(" in src, (
+        "sessions.js must call window._jumpToFullSessionMessage (the full-session "
+        "index variant, reachable across scripts) for the content-search jump"
     )
 
 
@@ -162,4 +168,35 @@ def test_sessions_js_does_not_call_bare_jump_helper():
     assert not bare, (
         "sessions.js contains a bare _jumpToMessage(...) call; it must be "
         "window._jumpToMessage(...) to cross the <script> boundary"
+    )
+
+
+def test_outline_exposes_full_session_jump_helper():
+    """#5106: outline.js must expose _jumpToFullSessionMessage on window — the
+    full-session-index variant the content-search path uses to avoid the
+    local-vs-full coordinate bug in truncated sessions."""
+    src = _OUTLINE_JS.read_text()
+    assert "window._jumpToFullSessionMessage = _jumpToFullSessionMessage" in src
+    assert "function _jumpToFullSessionMessage(" in src
+
+
+def test_full_session_jump_translates_full_to_local_and_forceloads():
+    """#5106: _jumpToFullSessionMessage must (a) translate a full-session index to
+    a LOCAL DOM index via _oldestIdx, and (b) force-load full history when the
+    session is truncated (so the offset tail doesn't leave the wrong row). Guards
+    against re-introducing the raw getElementById('msg-user-' + fullIdx) bug."""
+    src = _OUTLINE_JS.read_text()
+    # body of the full-session helper
+    start = src.index("function _jumpToFullSessionMessage(")
+    body = src[start:start + 1800]
+    # (a) full -> local translation via _oldestIdx
+    assert "_oldestIdx" in body and "fullIdx - off" in body, (
+        "_jumpToFullSessionMessage must translate full-session index to local via _oldestIdx"
+    )
+    # (b) truncated sessions force-load full history (msg_limit=9999) before resolving
+    assert "_messagesTruncated" in body
+    assert "msg_limit=9999" in body
+    # and it must NOT resolve a raw full index directly as a DOM id
+    assert "'msg-user-' + fullIdx" not in body, (
+        "must resolve the LOCAL index, never the raw full-session index, as the DOM id"
     )

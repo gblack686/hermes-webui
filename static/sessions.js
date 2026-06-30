@@ -7421,14 +7421,15 @@ function renderSessionListFromCache(){
           await loadSession(s.session_id);renderSessionListFromCache();
           // #4159: if the user clicked a content-search hit, scroll the
           // newly-loaded transcript to the matched message and flash it.
-          // window._jumpToMessage (exposed by outline.js) handles both the
-          // in-window case (smooth scrollIntoView + flash) and the
-          // out-of-render-window case (refetch full session w/ msg_limit=9999,
-          // expand the window, then retry). A missing idx falls back to opening
-          // at the latest message, so this stays backward compatible.
-          if(s.match_type==='content' && Number.isInteger(s.match_message_idx) && typeof window._jumpToMessage==='function'){
+          // match_message_idx is a FULL-SESSION index, so use
+          // window._jumpToFullSessionMessage (#5106) — it force-loads full
+          // history in a truncated session and translates full->local via
+          // _oldestIdx, instead of treating the full index as a local one (which
+          // flashed the WRONG row in long sessions). A missing idx falls back to
+          // opening at the latest message, so this stays backward compatible.
+          if(s.match_type==='content' && Number.isInteger(s.match_message_idx) && typeof window._jumpToFullSessionMessage==='function'){
             const _jumpIdx=s.match_message_idx;
-            window.setTimeout(()=>{ try{ window._jumpToMessage(_jumpIdx); }catch(_e){} }, 0);
+            window.setTimeout(()=>{ try{ window._jumpToFullSessionMessage(_jumpIdx); }catch(_e){} }, 0);
           }
           if(typeof closeMobileSidebar==='function')closeMobileSidebar();
         }finally{

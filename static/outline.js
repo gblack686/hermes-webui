@@ -90,7 +90,9 @@ function _excerptText(content) {
   return text.length > 60 ? text.slice(0, 60) + '…' : text;
 }
 
-// Scrolls to a user message row identified by its rawIdx and flashes it.
+// Scrolls to a user message row identified by its LOCAL rawIdx and flashes it.
+// (Outline entries pass a local S.messages index — consistent with the
+// `msg-user-<localIdx>` DOM ids stamped during render.)
 function _jumpToMessage(rawIdx) {
   const sid = _currentSid();
   if (!sid) return;
@@ -112,12 +114,63 @@ function _jumpToMessage(rawIdx) {
       if (!data || !data.session) return;
       if (!S.session || S.session.session_id !== sid) return;  // session switched
       S.messages = data.session.messages || [];                // populate S
+      // Full history loaded — the response is no longer an offset tail, so
+      // local indices == full-session indices. Keep _oldestIdx/_messagesTruncated
+      // in sync so downstream id stamping + translation stay correct (#5106).
+      if (typeof _oldestIdx !== 'undefined') _oldestIdx = data.session._messages_offset || 0;
+      if (typeof _messagesTruncated !== 'undefined') _messagesTruncated = !!data.session._messages_truncated;
       _expandOutlineRenderWindow();
       if (typeof renderMessages === 'function') renderMessages({ preserveScroll: true });
       window.setTimeout(function() {
         if (!S.session || S.session.session_id !== sid) return;
-        const r = document.getElementById('msg-user-' + rawIdx);
+        const localIdx = (typeof _oldestIdx !== 'undefined' && _oldestIdx > 0) ? (rawIdx - _oldestIdx) : rawIdx;
+        const r = document.getElementById('msg-user-' + localIdx);
         if (r) { r.scrollIntoView({ block: 'center', behavior: 'smooth' }); _flashRow(r); }
+      }, 120);
+    })
+    .catch(function() {});
+}
+
+// Scrolls to a message identified by its FULL-SESSION index (e.g. a content
+// search `match_message_idx` over the complete sess.messages list) and flashes
+// it. The transcript may be loaded as a TAIL WINDOW with DOM ids stamped from
+// LOCAL indices offset by `_oldestIdx`, so a raw `getElementById('msg-user-' +
+// fullIdx)` would resolve the WRONG row (or none) in a truncated session (#5106
+// / #4159). This path force-loads the full history first (so _oldestIdx == 0 and
+// local == full), then resolves; if already fully loaded it translates
+// full -> local via _oldestIdx.
+function _jumpToFullSessionMessage(fullIdx) {
+  const sid = _currentSid();
+  if (!sid || !Number.isInteger(fullIdx) || fullIdx < 0) return;
+
+  function _resolveAndFlash() {
+    const off = (typeof _oldestIdx !== 'undefined' && Number.isFinite(Number(_oldestIdx))) ? Number(_oldestIdx) : 0;
+    const localIdx = fullIdx - off;
+    if (localIdx < 0) return false;
+    const r = document.getElementById('msg-user-' + localIdx);
+    if (r) { r.scrollIntoView({ block: 'center', behavior: 'smooth' }); _flashRow(r); return true; }
+    return false;
+  }
+
+  const truncated = (typeof _messagesTruncated !== 'undefined' && _messagesTruncated) ||
+                    (typeof _oldestIdx !== 'undefined' && Number(_oldestIdx) > 0);
+  // If the session isn't truncated, local == full and the row is already present.
+  if (!truncated) { _resolveAndFlash(); return; }
+
+  if (typeof api !== 'function' || S.busy || S.activeStreamId) { _resolveAndFlash(); return; }
+  api('/api/session?session_id=' + encodeURIComponent(sid) +
+      '&messages=1&resolve_model=0&msg_limit=9999')
+    .then(function(data) {
+      if (!data || !data.session) return;
+      if (!S.session || S.session.session_id !== sid) return;  // session switched
+      S.messages = data.session.messages || [];
+      if (typeof _oldestIdx !== 'undefined') _oldestIdx = data.session._messages_offset || 0;
+      if (typeof _messagesTruncated !== 'undefined') _messagesTruncated = !!data.session._messages_truncated;
+      _expandOutlineRenderWindow();
+      if (typeof renderMessages === 'function') renderMessages({ preserveScroll: true });
+      window.setTimeout(function() {
+        if (!S.session || S.session.session_id !== sid) return;
+        _resolveAndFlash();
       }, 120);
     })
     .catch(function() {});
@@ -232,6 +285,11 @@ window._outlineJump = _jumpToMessage;
 // across the <script> boundary — _jumpToMessage is otherwise trapped inside
 // this IIFE and unreachable from sessions.js.
 window._jumpToMessage = _jumpToMessage;
+// Full-session-index variant for the content-search jump (#5106): callers that
+// have a `match_message_idx` over the COMPLETE sess.messages list must use this
+// (not _jumpToMessage, which expects a local render-window index) so a truncated
+// session resolves the correct row instead of the local-Nth.
+window._jumpToFullSessionMessage = _jumpToFullSessionMessage;
 window.applyConversationOutlinePreference = applyConversationOutlinePreference;
 
 // Re-render after renderMessages() if the panel is open and the session
