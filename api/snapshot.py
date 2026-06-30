@@ -59,6 +59,11 @@ SNAPSHOT_PREFIXES = (
     "/repos/",
     "/prds/",
     "/observability/",
+    # Profiles Catalog (B12): agent-profile catalog fixture + profile art /
+    # report bodies, migrated from 9119's web_dist static serving.
+    "/agent-profiles/",
+    "/profile-art/",
+    "/profile-reports/",
 )
 
 # /gbauto-documents/ is index-only: document bodies live in GCS (B8), not here.
@@ -71,9 +76,16 @@ _SNAPSHOT_MIME = {
     "json": "application/json",
     "csv": "text/csv",
     "txt": "text/plain",
+    # Profile art / report bodies (B12).
+    "html": "text/html",
+    "jpg": "image/jpeg",
+    "jpeg": "image/jpeg",
+    "png": "image/png",
+    "svg": "image/svg+xml",
+    "webp": "image/webp",
 }
-_TEXT_MIME = {"application/json", "text/csv", "text/plain"}
-_COMPRESSIBLE_MIME = {"application/json", "text/csv", "text/plain"}
+_TEXT_MIME = {"application/json", "text/csv", "text/plain", "text/html", "image/svg+xml"}
+_COMPRESSIBLE_MIME = {"application/json", "text/csv", "text/plain", "text/html", "image/svg+xml"}
 
 # Per-file cache (raw, gzip, etag) keyed by absolute path, invalidated by
 # (size, nanosecond mtime) -- same shape as routes._serve_static.

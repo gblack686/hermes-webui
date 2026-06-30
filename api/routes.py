@@ -10135,6 +10135,28 @@ def _handle_gbauto_langfuse(handler, parsed) -> bool:
         return bad(handler, f"langfuse failed: {exc}", status=500)
 
 
+def _handle_gbauto_agent_profiles(handler, parsed) -> bool:
+    """GET /api/gbauto/agent-profiles — tenant-scoped agent-profile catalog (B12).
+
+    Aggregate profile metadata (teams / catalog / routes) from the neutral
+    agent_profile_* schema, gated on webui's OWN auth. Degrades to an empty
+    payload (available=False) on the PC where the gbauto-supabase CLI is absent
+    -- the Profiles Catalog panel then falls back to the committed snapshot
+    fixture (static/gbauto/agent-profiles/catalog.json). Live catalog is
+    Mini-only (mini_pending)."""
+    if not _sankey_auth_ok(handler):
+        return bad(handler, "Authentication required", status=401)
+    from api import gbauto_agent_profiles
+
+    qs = parse_qs(parsed.query or "")
+    tenant = (qs.get("tenant", [""])[0] or "gbautomation").strip().lower()
+    try:
+        return j(handler, gbauto_agent_profiles.get_profile_catalog(tenant)) or True
+    except Exception as exc:  # never crash the worker on a catalog read
+        logger.warning("gbauto agent-profiles failed: %s", exc)
+        return bad(handler, f"agent-profiles failed: {exc}", status=500)
+
+
 # ── Agent Config schema editor (B2 — 9119 → webui migration) ──────────────────
 # Edits the Hermes *agent* config.yaml (model/terminal/agent.*). Namespaced under
 # /api/agent-config* so it never collides with WebUI's own /api/settings +
@@ -10451,6 +10473,8 @@ def handle_get(handler, parsed) -> bool:
         return _handle_gbauto_supabase_health(handler, parsed)
     if parsed.path == "/api/gbauto/langfuse":
         return _handle_gbauto_langfuse(handler, parsed)
+    if parsed.path == "/api/gbauto/agent-profiles":
+        return _handle_gbauto_agent_profiles(handler, parsed)
     if parsed.path == "/api/plugins/sankey-explorer/tables":
         return _handle_sankey_tables(handler, parsed)
     if parsed.path == "/api/plugins/sankey-explorer/chart":
