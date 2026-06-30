@@ -8,12 +8,18 @@
     "aggregate_only": true,
     "generated_at": "2026-06-30T00:00:00Z",
     "storage": "google-cloud-storage",
-    "note": "Document BODIES (6.2 GB / 10.6k files) stream from GCS (B8) via the gcs_url field; only this index is served locally.",
+    "bucket": "gbauto-artifacts-prod",
+    "note": "Document BODIES (6.2 GB / 10.6k files) stream from GCS (B8) via the gcs_url field / the /api/documents/url resolver; only this index is served locally.",
     "source": "SAMPLE FIXTURE -- regenerate via build_gbauto_documents_index.py (uploads bodies to GCS, emits this index)"
   },
   "documents": [
-    {"id": "doc-0001", "name": "9119-to-webui-migration.md", "kind": "plan", "size_bytes": 24400, "updated_at": "2026-06-30T00:00:00Z", "gcs_url": "https://storage.googleapis.com/gbauto-artifacts-prod/documents/doc-0001/9119-to-webui-migration.md"},
-    {"id": "doc-0002", "name": "sankey3js-improvements.md", "kind": "plan", "size_bytes": 18120, "updated_at": "2026-06-29T00:00:00Z", "gcs_url": "https://storage.googleapis.com/gbauto-artifacts-prod/documents/doc-0002/sankey3js-improvements.md"}
+    {"id": "doc-0001", "name": "9119-to-webui-migration.md", "title": "9119 to webui migration plan", "description": "Migrate the Hermes operator dashboard from 9119 to webui, full coverage then retire 9119.", "kind": "plan", "client": "gbautomation", "taxonomy": "engineering", "group": "migration", "extension": "md", "size_bytes": 24400, "updated_at": "2026-06-30T00:00:00Z", "gcs_url": "https://storage.googleapis.com/gbauto-artifacts-prod/documents/doc-0001/9119-to-webui-migration.md"},
+    {"id": "doc-0002", "name": "sankey3js-improvements.md", "title": "Sankey3js improvements", "description": "Engine reuse + rendering improvements for the sankey3js explorer.", "kind": "plan", "client": "gbautomation", "taxonomy": "engineering", "group": "sankey", "extension": "md", "size_bytes": 18120, "updated_at": "2026-06-29T00:00:00Z", "gcs_url": "https://storage.googleapis.com/gbauto-artifacts-prod/documents/doc-0002/sankey3js-improvements.md"},
+    {"id": "doc-0003", "name": "ecom-weekly-rollup.html", "title": "ECOM weekly rollup", "description": "Aggregate-only weekly production-green rollup for the ecom lane.", "kind": "report", "client": "ecom", "taxonomy": "ecom", "group": "rollups", "extension": "html", "size_bytes": 91240, "updated_at": "2026-06-28T00:00:00Z", "gcs_url": "https://storage.googleapis.com/gbauto-artifacts-prod/documents/doc-0003/ecom-weekly-rollup.html"},
+    {"id": "doc-0004", "name": "the-mall-discovery.pdf", "title": "The Mall App discovery brief", "description": "Discovery brief for The Mall App fashion-tech engagement.", "kind": "brief", "client": "the-mall", "taxonomy": "discovery", "group": "the-mall", "extension": "pdf", "size_bytes": 412300, "updated_at": "2026-06-27T00:00:00Z", "gcs_url": "https://storage.googleapis.com/gbauto-artifacts-prod/documents/doc-0004/the-mall-discovery.pdf"},
+    {"id": "doc-0005", "name": "fish-group-session-summary.html", "title": "Fish Group session summary", "description": "Aggregate session summary artifact for Fish Group fractional-CFO work.", "kind": "report", "client": "fish-group", "taxonomy": "delivery", "group": "sessions", "extension": "html", "size_bytes": 56120, "updated_at": "2026-06-26T00:00:00Z", "gcs_url": "https://storage.googleapis.com/gbauto-artifacts-prod/documents/doc-0005/fish-group-session-summary.html"},
+    {"id": "doc-0006", "name": "tac-artifact-retention.png", "title": "TAC artifact-retention diagram", "description": "P0-P4 artifact-retention policy diagram (bundle/gate/GCS+Supabase/fetch/prune).", "kind": "diagram", "client": "gbautomation", "taxonomy": "engineering", "group": "tac", "extension": "png", "size_bytes": 248900, "updated_at": "2026-06-25T00:00:00Z", "gcs_url": "https://storage.googleapis.com/gbauto-artifacts-prod/documents/doc-0006/tac-artifact-retention.png", "preview_url": "https://storage.googleapis.com/gbauto-artifacts-prod/documents/doc-0006/tac-artifact-retention.png"},
+    {"id": "doc-0007", "name": "jid5274-aura-landing.html", "title": "jid5274 Aura landing snapshot", "description": "Rendered snapshot of the jid5274 Aura landing page (Amplify deploy).", "kind": "report", "client": "jason-diaz", "taxonomy": "delivery", "group": "landing", "extension": "html", "size_bytes": 73800, "updated_at": "2026-06-24T00:00:00Z", "gcs_url": "https://storage.googleapis.com/gbauto-artifacts-prod/documents/doc-0007/jid5274-aura-landing.html"}
   ],
-  "totals": {"documents": 2}
+  "totals": {"documents": 7}
 }

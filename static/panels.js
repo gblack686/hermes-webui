@@ -41,7 +41,7 @@ const APP_TITLEBAR_KEYS = {
   memory: 'tab_memory', workspaces: 'tab_workspaces',
   profiles: 'tab_profiles', todos: 'tab_todos', insights: 'tab_insights', logs: 'tab_logs', settings: 'tab_settings',
 };
-const MAIN_VIEW_PANELS = ['home','overview','repos','lineage','settings','skills','memory','tasks','kanban','workspaces','profiles','insights','logs','plugin','pluginhub'];
+const MAIN_VIEW_PANELS = ['home','overview','repos','lineage','documents','settings','skills','memory','tasks','kanban','workspaces','profiles','insights','logs','plugin','pluginhub'];
 const MAIN_VIEW_SIDEBAR_PANEL_FALLBACKS = { plugin: 'settings' };
 
 /**
@@ -317,6 +317,7 @@ async function switchPanel(name, opts = {}) {
   if (nextPanel === 'overview') await loadOverview();
   if (nextPanel === 'repos') await loadRepos();
   if (nextPanel === 'lineage') await loadLineage();
+  if (nextPanel === 'documents') await loadDocuments();
   if (nextPanel === 'tasks') await loadCrons();
   if (nextPanel === 'kanban') await loadKanban();
   if (nextPanel === 'skills') await loadSkills();
@@ -994,6 +995,305 @@ async function loadLineage(force){
   _lineageData = await _overviewFetchJson('/gbauto-lineage/prd-lineage.json');
   _lineageLoaded = true;
   renderLineage();
+}
+
+// ── Documents panel (plan B8) ──
+// Vanilla-JS rewrite of 9119's 877-line DocumentsPage gallery (filters / date /
+// grid / iframe preview / modal). The dead localStorage feedback (scores,
+// favorites, archive/delete staging that never persisted) is dropped per the
+// plan. The index is the B0a snapshot (/gbauto-documents/index.json, index-only:
+// document BODIES are 6.2 GB and live in Google Cloud Storage). A document's
+// openable URL is resolved by the /api/documents/url scaffold which mints a GCS
+// signed URL on the Mini (gcloud authed) and degrades to the public gcs_url on
+// the PC. No backend on the read path, no 9119 token scheme. Tenant scoping
+// reuses the SAME ported TENANT_CLIENT_ALIASES / client_slug model as
+// Overview/Repos/Lineage (REQUIRED per plan decision #6): the index is
+// pre-scoped at generation time and this is the client-side guard. Helpers
+// (_ovEsc / _overviewClientColor / _overviewRelativeTime / _overviewTenantAllows
+// / _overviewActiveTenant / _overviewFetchJson / _overviewStatCard) are reused
+// from the Overview panel above.
+let _documentsLoaded = false;
+let _documentsData = null;
+let _docQuery = '';
+let _docKind = 'All';
+let _docGroup = 'All';
+let _docDate = 'All';
+let _docSelectedId = null;
+let _docModalId = null;
+let _docModalResolved = null;   // {url, signed, mini_pending} from /api/documents/url
+
+function _docList(data){
+  if (!data) return [];
+  // Accept both the generator's `documents` key and a fallback `artifacts` key.
+  const arr = Array.isArray(data.documents) ? data.documents
+    : (Array.isArray(data.artifacts) ? data.artifacts : []);
+  return arr.filter((d) => d && typeof d === 'object');
+}
+function _docTitle(doc){ return doc.title || doc.name || doc.id || 'Untitled'; }
+function _docExt(doc){
+  if (doc.extension) return String(doc.extension).toLowerCase();
+  const name = String(doc.name || '');
+  const dot = name.lastIndexOf('.');
+  return dot !== -1 ? name.slice(dot + 1).toLowerCase() : '';
+}
+function _docKindOf(doc){ return doc.kind || doc.docType || doc.taxonomy || 'document'; }
+function _docGroupOf(doc){ return doc.group || doc.taxonomy || _docKindOf(doc); }
+function _docSize(doc){ return Number(doc.size_bytes != null ? doc.size_bytes : (doc.sizeBytes || 0)); }
+function _docUpdated(doc){ return doc.updated_at || doc.modifiedAt || doc.generatedAt || ''; }
+function _docPublicUrl(doc){ return doc.gcs_url || doc.public_url || doc.publicPath || ''; }
+function _docPreviewUrl(doc){ return doc.preview_url || doc.previewPath || _docPublicUrl(doc); }
+function _docTime(doc){
+  const ms = new Date(_docUpdated(doc)).getTime();
+  return Number.isNaN(ms) ? 0 : ms;
+}
+function _docDateKey(doc){
+  const ms = _docTime(doc);
+  if (!ms) return 'unknown';
+  return new Date(ms).toISOString().slice(0, 10);
+}
+function _docFormatSize(bytes){
+  if (!bytes) return '';
+  if (bytes >= 1024 * 1024) return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+  return `${Math.max(1, Math.round(bytes / 1024))} KB`;
+}
+function _docFormatDate(value){
+  if (!value) return 'Unknown date';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return 'Unknown date';
+  try { return new Intl.DateTimeFormat(undefined, { dateStyle: 'medium' }).format(date); }
+  catch (_e) { return value; }
+}
+function _docFormatDateKey(dateKey){
+  if (dateKey === 'unknown') return 'Unknown';
+  const date = new Date(`${dateKey}T12:00:00`);
+  if (Number.isNaN(date.getTime())) return dateKey;
+  try { return new Intl.DateTimeFormat(undefined, { month: 'short', day: 'numeric' }).format(date); }
+  catch (_e) { return dateKey; }
+}
+function _docPreviewKind(doc){
+  const ext = _docExt(doc);
+  if (ext === 'png' || ext === 'jpg' || ext === 'jpeg' || ext === 'gif' || ext === 'webp' || ext === 'svg') return 'image';
+  if (ext === 'pdf') return 'pdf';
+  return 'frame';
+}
+function _docScopedList(data, tenant){
+  return _docList(data).filter((d) => _overviewTenantAllows(tenant, d && d.client));
+}
+function _docSearchable(doc){
+  return [
+    doc.id, _docTitle(doc), doc.description, doc.name, doc.client,
+    _docKindOf(doc), _docGroupOf(doc), doc.taxonomy, _docExt(doc),
+  ].filter(Boolean).join(' ').toLowerCase();
+}
+
+function _docPreviewMarkup(doc, cls, eager){
+  const kind = _docPreviewKind(doc);
+  const loading = eager ? 'eager' : 'lazy';
+  if (kind === 'image'){
+    return `<img class="${cls}" loading="${loading}" alt="${_ovEsc(_docTitle(doc))} preview" src="${_ovEsc(_docPreviewUrl(doc))}">`;
+  }
+  // Card thumbnails for non-image kinds: show an icon plate (the body lives in
+  // GCS and may be cross-origin / offline on the PC, so avoid a broken iframe).
+  if (!eager){
+    return `<div class="${cls} documents-preview-plate"><span class="documents-ext-badge">${_ovEsc((_docExt(doc) || 'doc').toUpperCase())}</span></div>`;
+  }
+  return `<iframe class="${cls}" loading="${loading}" title="${_ovEsc(_docTitle(doc))} preview" src="${_ovEsc(_docPublicUrl(doc))}"></iframe>`;
+}
+
+function _docCard(doc, selected){
+  const color = _overviewClientColor(doc.client);
+  return `<article class="documents-card ${selected ? 'is-selected' : ''}">`
+    + `<div class="documents-card-preview">`
+    +   _docPreviewMarkup(doc, 'documents-preview-frame', false)
+    +   `<button type="button" class="documents-open-btn" onclick="onDocOpen('${_ovEsc(doc.id)}')">Open</button>`
+    + `</div>`
+    + `<div class="documents-card-body">`
+    +   `<div class="documents-card-top">`
+    +     `<span class="documents-card-kind">${_ovEsc(_docKindOf(doc))}</span>`
+    +     (doc.client ? `<span class="documents-card-client" style="border-color:${_ovEsc(color)};color:${_ovEsc(color)}">${_ovEsc(doc.client)}</span>` : '')
+    +   `</div>`
+    +   `<h3 class="documents-card-title">${_ovEsc(_docTitle(doc))}</h3>`
+    +   (doc.description ? `<p class="documents-card-desc">${_ovEsc(doc.description)}</p>` : '')
+    +   `<div class="documents-card-meta">`
+    +     (doc.taxonomy ? `<span>${_ovEsc(doc.taxonomy)}</span>` : '')
+    +     `<span>${_ovEsc((_docExt(doc) || '').toUpperCase())}</span>`
+    +     (_docSize(doc) ? `<span>${_ovEsc(_docFormatSize(_docSize(doc)))}</span>` : '')
+    +     `<span>${_ovEsc(_docFormatDate(_docUpdated(doc)))}</span>`
+    +   `</div>`
+    + `</div>`
+    + `</article>`;
+}
+
+function _docModalMarkup(doc){
+  if (!doc) return '';
+  const resolved = _docModalResolved;
+  const openUrl = (resolved && resolved.url) || _docPublicUrl(doc);
+  const previewDoc = (resolved && resolved.url)
+    ? Object.assign({}, doc, { gcs_url: resolved.url, public_url: resolved.url, preview_url: resolved.url })
+    : doc;
+  const pending = !resolved
+    ? `<span class="documents-modal-note">Resolving document URL&hellip;</span>`
+    : (resolved.mini_pending
+      ? `<span class="documents-modal-note warn">Public link (signed GCS URL is Mini-only &mdash; gcloud auth required)</span>`
+      : `<span class="documents-modal-note ok">Signed GCS URL</span>`);
+  const openLink = openUrl
+    ? `<a class="documents-modal-open" href="${_ovEsc(openUrl)}" target="_blank" rel="noreferrer">Open document &#8599;</a>`
+    : `<span class="documents-modal-note warn">No URL available</span>`;
+  return `<div class="documents-modal" onclick="onDocModalBackdrop(event)">`
+    + `<div class="documents-modal-stage">`
+    +   `<div class="documents-modal-frame-wrap">${_docPreviewMarkup(previewDoc, 'documents-modal-frame', true)}</div>`
+    +   `<aside class="documents-modal-side">`
+    +     `<button type="button" class="documents-modal-close" onclick="closeDocModal()" aria-label="Close preview">&times;</button>`
+    +     `<p class="gbhub-eyebrow">${_ovEsc(_docKindOf(doc))}</p>`
+    +     `<h3>${_ovEsc(_docTitle(doc))}</h3>`
+    +     (doc.description ? `<p class="gbhub-muted">${_ovEsc(doc.description)}</p>` : '')
+    +     `<div class="documents-modal-meta">`
+    +       (doc.client ? `<span><b>Client</b>${_ovEsc(doc.client)}</span>` : '')
+    +       `<span><b>Type</b>${_ovEsc((_docExt(doc) || '').toUpperCase() || _docKindOf(doc))}</span>`
+    +       (_docSize(doc) ? `<span><b>Size</b>${_ovEsc(_docFormatSize(_docSize(doc)))}</span>` : '')
+    +       `<span><b>Updated</b>${_ovEsc(_docFormatDate(_docUpdated(doc)))}</span>`
+    +     `</div>`
+    +     pending
+    +     openLink
+    +   `</aside>`
+    + `</div>`
+    + `</div>`;
+}
+
+function renderDocuments(){
+  const container = document.getElementById('documentsContent');
+  if (!container) return;
+  const data = _documentsData;
+
+  if (!data){
+    container.innerHTML = ''
+      + `<section class="gbhub-hero">`
+      +   `<div class="gbhub-brand-row"><span class="gbhub-mark">gb</span><span>GBAutomation Artifacts</span></div>`
+      +   `<h2>Documents</h2>`
+      +   `<p class="gbhub-muted">Documents index unavailable.</p>`
+      + `</section>`
+      + `<section class="gbhub-empty-state">Documents index unavailable. Regenerate the <code>gbauto-documents/index.json</code> snapshot (build_gbauto_documents_index.py).</section>`;
+    return;
+  }
+
+  const meta = data._meta || {};
+  const tenant = _overviewActiveTenant(meta);
+  const scoped = _docScopedList(data, tenant);
+
+  const kinds = ['All', ...Array.from(new Set(scoped.map(_docKindOf).filter(Boolean)))];
+  const groups = ['All', ...Array.from(new Set(scoped.map(_docGroupOf).filter(Boolean))).slice(0, 16)];
+
+  const dateCounts = new Map();
+  for (const d of scoped){
+    const key = _docDateKey(d);
+    dateCounts.set(key, (dateCounts.get(key) || 0) + 1);
+  }
+  const dateOptions = Array.from(dateCounts.entries())
+    .map(([dateKey, count]) => ({ count, dateKey }))
+    .sort((a, b) => (a.dateKey === 'unknown' ? 1 : (b.dateKey === 'unknown' ? -1 : b.dateKey.localeCompare(a.dateKey))));
+
+  const needle = String(_docQuery || '').trim().toLowerCase();
+  const filtered = scoped.filter((d) => {
+    if (_docKind !== 'All' && _docKindOf(d) !== _docKind) return false;
+    if (_docGroup !== 'All' && _docGroupOf(d) !== _docGroup) return false;
+    if (_docDate !== 'All' && _docDateKey(d) !== _docDate) return false;
+    if (needle && _docSearchable(d).indexOf(needle) === -1) return false;
+    return true;
+  }).sort((a, b) => _docTime(b) - _docTime(a));
+
+  const selected = filtered.find((d) => d.id === _docSelectedId) || null;
+  const modalDoc = _docList(data).find((d) => d.id === _docModalId) || null;
+
+  const ICON_SEARCH = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.35-4.35"/></svg>';
+  const ICON_DOC = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>';
+
+  const totalIndexed = (data.totals && data.totals.documents) || _docList(data).length;
+  const storage = meta.storage || 'google-cloud-storage';
+
+  const kindSelect = `<select class="documents-select" aria-label="Filter by type" onchange="onDocKind(this.value)">`
+    + kinds.map((k) => `<option value="${_ovEsc(k)}" ${k === _docKind ? 'selected' : ''}>${_ovEsc(k === 'All' ? 'All types' : k)}</option>`).join('')
+    + `</select>`;
+  const groupSelect = `<select class="documents-select" aria-label="Filter by set" onchange="onDocGroup(this.value)">`
+    + groups.map((g) => `<option value="${_ovEsc(g)}" ${g === _docGroup ? 'selected' : ''}>${_ovEsc(g === 'All' ? 'All sets' : g)}</option>`).join('')
+    + `</select>`;
+
+  const dateChips = [`<button type="button" class="documents-date-chip ${_docDate === 'All' ? 'is-active' : ''}" onclick="onDocDate('All')"><span>All</span><small>${scoped.length}</small></button>`]
+    .concat(dateOptions.map((o) => (
+      `<button type="button" class="documents-date-chip ${_docDate === o.dateKey ? 'is-active' : ''}" onclick="onDocDate('${_ovEsc(o.dateKey)}')"><span>${_ovEsc(_docFormatDateKey(o.dateKey))}</span><small>${_ovEsc(o.count)}</small></button>`
+    ))).join('');
+
+  const hasFilters = needle !== '' || _docKind !== 'All' || _docGroup !== 'All' || _docDate !== 'All';
+  const clearBtn = hasFilters ? `<button type="button" class="documents-clear" onclick="onDocClear()">Clear</button>` : '';
+
+  const grid = filtered.length
+    ? filtered.map((d) => _docCard(d, selected && selected.id === d.id)).join('')
+    : `<section class="gbhub-empty-state">${scoped.length ? 'No artifacts match that filter set.' : 'No artifacts in scope for this tenant.'}</section>`;
+
+  container.innerHTML = ''
+    + `<section class="gbhub-hero">`
+    +   `<div class="gbhub-brand-row"><span class="gbhub-mark">gb</span><span>GBAutomation Artifacts</span></div>`
+    +   `<span class="gbhub-badge">${ICON_DOC} ${_ovEsc(storage)}</span>`
+    +   `<h2>Document Gallery</h2>`
+    +   `<p>Plans, reports, briefs, and visuals scanned from the GBAutomation workspace. The index is served locally; document bodies stream from Google Cloud Storage.</p>`
+    +   `<small class="gbhub-tenant">Tenant scope: <strong>${_ovEsc(tenant)}</strong>`
+    +     (meta.generated_at ? ` &middot; index ${_ovEsc(_overviewRelativeTime(meta.generated_at) || meta.generated_at)}` : '')
+    +   `</small>`
+    + `</section>`
+    + `<section class="gbhub-stat-grid" aria-label="Document totals">`
+    +   _overviewStatCard({ accent: '#D97757', label: 'Shown', sub: `of ${_ovEsc(totalIndexed)} indexed`, value: filtered.length })
+    +   _overviewStatCard({ accent: '#8A5FBF', label: 'Types', sub: 'doc kinds', value: Math.max(0, kinds.length - 1) })
+    +   _overviewStatCard({ accent: '#4F9D69', label: 'Sets', sub: 'groups', value: Math.max(0, groups.length - 1) })
+    +   _overviewStatCard({ accent: '#06b6d4', label: 'Storage', sub: 'object store', value: 'GCS' })
+    + `</section>`
+    + `<section class="documents-toolbar">`
+    +   `<label class="documents-search">${ICON_SEARCH}<input type="search" autocomplete="off" value="${_ovEsc(_docQuery)}" placeholder="Search artifacts by title, path, set" oninput="onDocSearch(this.value)"></label>`
+    +   kindSelect
+    +   groupSelect
+    +   clearBtn
+    + `</section>`
+    + `<section class="documents-date-bar" aria-label="Document date filter">`
+    +   `<input type="date" class="documents-date-input" aria-label="Select artifact date" value="${_ovEsc(_docDate === 'All' || _docDate === 'unknown' ? '' : _docDate)}" onchange="onDocDate(this.value || 'All')">`
+    +   `<div class="documents-date-chips">${dateChips}</div>`
+    + `</section>`
+    + `<div class="documents-grid">${grid}</div>`
+    + _docModalMarkup(modalDoc);
+}
+
+function onDocSearch(value){
+  _docQuery = value;
+  renderDocuments();
+  const input = document.querySelector('.documents-search input');
+  if (input){
+    input.focus();
+    try { const n = input.value.length; input.setSelectionRange(n, n); } catch (_e) {}
+  }
+}
+function onDocKind(value){ _docKind = value; renderDocuments(); }
+function onDocGroup(value){ _docGroup = value; renderDocuments(); }
+function onDocDate(value){ _docDate = value; renderDocuments(); }
+function onDocClear(){ _docQuery = ''; _docKind = 'All'; _docGroup = 'All'; _docDate = 'All'; renderDocuments(); }
+async function onDocOpen(id){
+  _docSelectedId = id;
+  _docModalId = id;
+  _docModalResolved = null;
+  renderDocuments();
+  // Resolve the GCS URL via the B8 scaffold (signed on the Mini, public on PC).
+  const res = await _overviewFetchJson('/api/documents/url?id=' + encodeURIComponent(id));
+  if (_docModalId !== id) return; // user closed / switched while resolving
+  _docModalResolved = res || null;
+  renderDocuments();
+}
+function closeDocModal(){ _docModalId = null; _docModalResolved = null; renderDocuments(); }
+function onDocModalBackdrop(event){
+  if (event && event.target === event.currentTarget) closeDocModal();
+}
+async function loadDocuments(force){
+  const container = document.getElementById('documentsContent');
+  if (!container) return;
+  if (_documentsLoaded && !force) return;
+  _documentsData = await _overviewFetchJson('/gbauto-documents/index.json');
+  _documentsLoaded = true;
+  renderDocuments();
 }
 
 // ── Cron panel ──
