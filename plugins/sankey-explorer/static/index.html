@@ -1,0 +1,212 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Sankey Explorer</title>
+<style>
+  /* GBAuto brand tokens. Self-contained — this page is served standalone in a
+     sandboxed iframe by the WebUI plugin loader (no host SDK / no build step). */
+  :root { --terracotta:#D97757; --cream:#F3F1E7; --ink:#191919; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; }
+  body {
+    font-family: Inter, system-ui, -apple-system, sans-serif;
+    color: var(--ink); background: #fff;
+  }
+  .sankey-wrap {
+    display: flex; flex-direction: column; gap: 16px;
+    padding: 20px 24px; height: 100%;
+  }
+  .sankey-header { display: flex; flex-direction: column; gap: 4px; }
+  .sankey-title { font-family: Newsreader, Georgia, serif; font-size: 24px; font-weight: 600; margin: 0; }
+  .sankey-sub { margin: 0; font-size: 13px; opacity: 0.7; max-width: 70ch; }
+  .sankey-controls {
+    display: flex; flex-wrap: wrap; align-items: flex-end; gap: 12px;
+    padding: 14px 16px; background: var(--cream);
+    border: 1px solid rgba(25,25,25,0.08); border-radius: 12px;
+  }
+  .sankey-field { display: flex; flex-direction: column; gap: 4px; min-width: 130px; }
+  .sankey-field--btn { min-width: auto; justify-content: flex-end; }
+  .sankey-label {
+    font-size: 11px; font-weight: 600; text-transform: uppercase;
+    letter-spacing: 0.04em; opacity: 0.7;
+  }
+  .sankey-select, .sankey-btn {
+    appearance: none; -webkit-appearance: none;
+    padding: 8px 10px; font-size: 13px; font-family: inherit; color: var(--ink);
+    background: #fff; border: 1px solid rgba(25,25,25,0.18); border-radius: 8px;
+    cursor: pointer; min-width: 130px;
+  }
+  .sankey-select:focus, .sankey-btn:focus {
+    outline: none; border-color: var(--terracotta);
+    box-shadow: 0 0 0 2px rgba(217,119,87,0.25);
+  }
+  .sankey-select:disabled, .sankey-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+  .sankey-btn {
+    min-width: auto; background: var(--terracotta); color: var(--cream);
+    border-color: var(--terracotta); font-weight: 600;
+  }
+  .sankey-frame-wrap {
+    flex: 1; min-height: 480px; border: 1px solid rgba(25,25,25,0.1);
+    border-radius: 12px; overflow: hidden; background: var(--ink);
+  }
+  .sankey-frame { width: 100%; height: 100%; min-height: 480px; border: 0; display: block; }
+  .sankey-placeholder, .sankey-muted {
+    display: flex; align-items: center; justify-content: center;
+    height: 100%; min-height: 480px; color: var(--cream); opacity: 0.6; font-size: 14px;
+  }
+  .sankey-muted { color: var(--ink); }
+  .sankey-error {
+    padding: 10px 14px; border-radius: 8px; background: rgba(217,119,87,0.12);
+    border: 1px solid var(--terracotta); color: #8a3a20; font-size: 13px;
+  }
+</style>
+</head>
+<body>
+<div class="sankey-wrap">
+  <div class="sankey-header">
+    <h1 class="sankey-title">Sankey Explorer</h1>
+    <p class="sankey-sub" id="subtitle">
+      Every PII-safe table as an interactive 3D Sankey. Aggregate-only
+      (GROUP BY -&gt; count + sum); raw rows never leave Supabase.
+    </p>
+  </div>
+  <div class="sankey-controls" id="controls" hidden>
+    <div class="sankey-field">
+      <label class="sankey-label" for="selTable">Table</label>
+      <select class="sankey-select" id="selTable"></select>
+    </div>
+    <div class="sankey-field">
+      <label class="sankey-label" for="selA">Left</label>
+      <select class="sankey-select" id="selA" disabled></select>
+    </div>
+    <div class="sankey-field">
+      <label class="sankey-label" for="selB">Middle</label>
+      <select class="sankey-select" id="selB" disabled></select>
+    </div>
+    <div class="sankey-field">
+      <label class="sankey-label" for="selC">Right</label>
+      <select class="sankey-select" id="selC" disabled></select>
+    </div>
+    <div class="sankey-field">
+      <label class="sankey-label" for="selW">Weight</label>
+      <select class="sankey-select" id="selW" disabled></select>
+    </div>
+    <div class="sankey-field sankey-field--btn">
+      <button class="sankey-btn" id="btnRender" disabled>Render</button>
+    </div>
+  </div>
+  <div class="sankey-error" id="err" hidden></div>
+  <div class="sankey-frame-wrap">
+    <div class="sankey-placeholder" id="placeholder">Loading table catalog…</div>
+    <iframe class="sankey-frame" id="frame" title="Sankey chart" hidden></iframe>
+  </div>
+</div>
+<script>
+(function () {
+  "use strict";
+  var API = "/api/plugins/sankey-explorer";
+  var $ = function (id) { return document.getElementById(id); };
+  var catalog = null;
+
+  function showError(msg) {
+    var e = $("err");
+    e.textContent = msg;
+    e.hidden = false;
+  }
+  function clearError() { $("err").hidden = true; }
+
+  function opt(value, label) {
+    var o = document.createElement("option");
+    o.value = value;
+    o.textContent = label;
+    return o;
+  }
+
+  function fillDimSelect(sel, dims, includeBlank, placeholder) {
+    sel.innerHTML = "";
+    if (includeBlank) sel.appendChild(opt("", placeholder || ""));
+    (dims || []).forEach(function (d) { sel.appendChild(opt(d, d)); });
+  }
+
+  function tableMeta() {
+    var t = $("selTable").value;
+    return (catalog && t && catalog[t]) || null;
+  }
+
+  function onTableChange() {
+    var meta = tableMeta();
+    var a = $("selA"), b = $("selB"), c = $("selC"), w = $("selW");
+    var dims = (meta && meta.dims) || [];
+    var weights = (meta && meta.weights) || [];
+    [a, b, c].forEach(function (s) { s.disabled = !meta; });
+    fillDimSelect(a, dims, false);
+    fillDimSelect(b, dims, false);
+    fillDimSelect(c, dims, true, "(optional)");
+    a.value = dims[0] || "";
+    b.value = dims[1] || "";
+    c.value = dims[2] || "";
+    w.innerHTML = "";
+    w.appendChild(opt("", weights.length ? "count (default)" : "count only"));
+    weights.forEach(function (x) { w.appendChild(opt(x, x)); });
+    w.disabled = !meta || weights.length === 0;
+    $("btnRender").disabled = !meta;
+  }
+
+  function render() {
+    var meta = tableMeta();
+    var table = $("selTable").value;
+    var dims = [$("selA").value, $("selB").value, $("selC").value].filter(Boolean);
+    if (!table || dims.length < 2) {
+      showError("Pick a table and at least two dimensions.");
+      return;
+    }
+    clearError();
+    var params = new URLSearchParams();
+    params.set("table", table);
+    params.set("dims", dims.join(","));
+    var weight = $("selW").value;
+    if (weight) params.set("weight", weight);
+    $("placeholder").hidden = true;
+    var frame = $("frame");
+    frame.hidden = false;
+    // Same-origin GET; the WebUI session cookie (when auth is on) authenticates.
+    frame.src = API + "/chart?" + params.toString();
+  }
+
+  function loadCatalog() {
+    fetch(API + "/tables", { credentials: "same-origin" })
+      .then(function (r) {
+        if (!r.ok) throw new Error("HTTP " + r.status);
+        return r.json();
+      })
+      .then(function (data) {
+        catalog = data.tables || {};
+        var sel = $("selTable");
+        sel.innerHTML = "";
+        sel.appendChild(opt("", "Choose a table…"));
+        Object.keys(catalog).sort().forEach(function (t) {
+          var m = catalog[t];
+          var label = (m.title || t) + (m.has_fixture ? "" : "  (live-only)");
+          sel.appendChild(opt(t, label));
+        });
+        if (data.mode) {
+          $("subtitle").textContent += "  Mode: " + data.mode + ".";
+        }
+        $("controls").hidden = false;
+        $("placeholder").textContent = "Pick a table and dimensions, then press Render.";
+      })
+      .catch(function (e) {
+        $("placeholder").textContent = "";
+        showError("Failed to load catalog: " + ((e && e.message) || e));
+      });
+  }
+
+  $("selTable").addEventListener("change", onTableChange);
+  $("btnRender").addEventListener("click", render);
+  loadCatalog();
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,12 @@
+{
+  "name": "sankey-explorer",
+  "label": "Sankey",
+  "description": "Explore any PII-safe Supabase table as an interactive 3D Sankey — pick a table, two/three dimensions, and an optional weight; the chart renders aggregate-only flows (GROUP BY -> count + sum). Raw rows never leave Supabase.",
+  "icon": "Workflow",
+  "version": "1.1.0",
+  "tab": {
+    "path": "/sankey",
+    "label": "Sankey",
+    "position": "after:skills"
+  }
+}

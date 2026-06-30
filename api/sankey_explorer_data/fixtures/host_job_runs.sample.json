@@ -1,0 +1,18 @@
+{
+  "rows": [
+    {"job_name": "ecom-hourly-lane", "host": "mac-mini", "status": "success", "scheduler": "launchd"},
+    {"job_name": "ecom-hourly-lane", "host": "mac-mini", "status": "success", "scheduler": "launchd"},
+    {"job_name": "ecom-hourly-lane", "host": "mac-mini", "status": "failed", "scheduler": "launchd"},
+    {"job_name": "prd-index-sync", "host": "mac-mini", "status": "success", "scheduler": "cron"},
+    {"job_name": "prd-index-sync", "host": "mac-mini", "status": "failed", "scheduler": "cron"},
+    {"job_name": "task-telegram-notify", "host": "mac-mini", "status": "success", "scheduler": "cron"},
+    {"job_name": "task-telegram-notify", "host": "mac-mini", "status": "success", "scheduler": "cron"},
+    {"job_name": "task-telegram-notify", "host": "mac-mini", "status": "running", "scheduler": "cron"},
+    {"job_name": "artifacts-nightly-diff", "host": "mac-mini", "status": "success", "scheduler": "cron"},
+    {"job_name": "commit-cleaner", "host": "windows-pc", "status": "success", "scheduler": "windows-task"},
+    {"job_name": "commit-cleaner", "host": "windows-pc", "status": "failed", "scheduler": "windows-task"},
+    {"job_name": "invoke-with-receipt", "host": "windows-pc", "status": "success", "scheduler": "windows-task"},
+    {"job_name": "invoke-with-receipt", "host": "windows-pc", "status": "success", "scheduler": "windows-task"},
+    {"job_name": "graphify-sync", "host": "mac-mini", "status": "success", "scheduler": "launchd"}
+  ]
+}
