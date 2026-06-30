@@ -4597,6 +4597,10 @@ main.main > #mainLogs{display:none;}
 main.main:not(.showing-home):not(.showing-overview):not(.showing-repos):not(.showing-lineage):not(.showing-documents):not(.showing-supabase):not(.showing-langfuse):not(.showing-kanbandata):not(.showing-agentconfig):not(.showing-env):not(.showing-settings):not(.showing-skills):not(.showing-memory):not(.showing-tasks):not(.showing-kanban):not(.showing-workspaces):not(.showing-profiles):not(.showing-profilescatalog):not(.showing-insights):not(.showing-logs):not(.showing-plugin):not(.showing-pluginhub) > #mainChat{display:flex;}
 main.main.showing-agentconfig > #mainAgentconfig{display:flex;overflow-y:auto;}
 main.main.showing-env > #mainEnv{display:flex;overflow-y:auto;}
+main.main > #mainAgentconfig{display:none;}
+main.main > #mainEnv{display:none;}
+main.main > #mainHome{display:none;}
+main.main > #mainProfilescatalog{display:none;}
 /* ── Keys / Env tab (B3) ── */
 #mainEnv .env-content{padding:16px;display:flex;flex-direction:column;gap:14px;max-width:920px;width:100%;}
 .env-status{color:var(--muted);font-size:12px;margin-top:2px;}
