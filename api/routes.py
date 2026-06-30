@@ -9792,6 +9792,48 @@ def _handle_plugins(handler, parsed) -> bool:
         )
 
 
+def _handle_plugin_mgmt_post(handler, parsed, body) -> bool:
+    """Dispatch /api/plugins/<name>/<action> management POSTs (B4).
+
+    Returns False (→ 404) for unrecognized name/action shapes so the caller's
+    dispatch can fall through. All wrappers ride on hermes_cli.plugins_cmd and
+    surface a 503 when that backend is unavailable.
+    """
+    from api.plugins import (
+        PluginManagementUnavailable,
+        remove_user_plugin,
+        set_agent_plugin_enabled,
+        set_visibility,
+        update_user_plugin,
+    )
+
+    rest = parsed.path[len("/api/plugins/"):]
+    parts = [p for p in rest.split("/") if p]
+    if len(parts) != 2:
+        return False
+    name, action = parts[0], parts[1]
+    try:
+        if action == "enable":
+            result = set_agent_plugin_enabled(name, enabled=True)
+        elif action == "disable":
+            result = set_agent_plugin_enabled(name, enabled=False)
+        elif action == "update":
+            result = update_user_plugin(name)
+        elif action == "remove":
+            result = remove_user_plugin(name)
+        elif action == "visibility":
+            result = set_visibility(name, hidden=bool(body.get("hidden")))
+        else:
+            return False
+    except PluginManagementUnavailable as exc:
+        return bad(handler, str(exc), status=503)
+    except ValueError as exc:
+        return bad(handler, str(exc), status=400)
+    if not result.get("ok"):
+        return bad(handler, result.get("error") or f"{action} failed.", status=400)
+    return j(handler, result)
+
+
 _SHELL_ERROR_HTML = """<!doctype html>
 <html lang=\"en\">
 <head>
@@ -10370,6 +10412,15 @@ def handle_get(handler, parsed) -> bool:
     # ── Plugins/hooks visibility (read-only, no callback/source internals) ──
     if parsed.path == "/api/plugins":
         return _handle_plugins(handler, parsed)
+    # ── Plugins management hub (B4): merged agent + dashboard metadata.
+    # Auth-gated by check_auth (WebUI's own session auth) at the server layer;
+    # no 9119 token scheme. Degrades gracefully if hermes_cli is absent.
+    if parsed.path == "/api/plugins/hub":
+        from api.plugins import build_hub
+        return j(handler, build_hub())
+    if parsed.path == "/api/plugins/rescan":
+        from api.plugins import rescan
+        return j(handler, rescan())
     if parsed.path == "/api/provider/quota":
         query = parse_qs(parsed.query)
         provider_id = (query.get("provider", [""])[0] or None)
@@ -11802,6 +11853,34 @@ def handle_post(handler, parsed) -> bool:
 
     if parsed.path == "/api/escape/authorize":
         return _handle_escape_authorize(handler, parsed, body)
+
+    # ── Plugins management hub writes (B4). Auth-gated by check_auth (WebUI
+    # session auth) + CSRF above; these ride on hermes_cli.plugins_cmd and 503
+    # gracefully when that backend is absent (standalone WebUI host). ──
+    if parsed.path == "/api/plugins/install":
+        from api.plugins import PluginManagementUnavailable, install_plugin
+        try:
+            result = install_plugin(
+                body.get("identifier"),
+                force=bool(body.get("force", False)),
+                enable=bool(body.get("enable", True)),
+            )
+        except PluginManagementUnavailable as exc:
+            return bad(handler, str(exc), status=503)
+        if not result.get("ok"):
+            return bad(handler, result.get("error") or "Install failed.", status=400)
+        return j(handler, result)
+    if parsed.path == "/api/plugins/providers":
+        from api.plugins import PluginManagementUnavailable, set_providers
+        try:
+            return j(handler, set_providers(
+                memory_provider=body.get("memory_provider"),
+                context_engine=body.get("context_engine"),
+            ))
+        except PluginManagementUnavailable as exc:
+            return bad(handler, str(exc), status=503)
+    if parsed.path.startswith("/api/plugins/"):
+        return _handle_plugin_mgmt_post(handler, parsed, body)
 
     if parsed.path == "/api/updates/check":
         settings = load_settings()
