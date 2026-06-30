@@ -4594,12 +4594,14 @@ main.main > #mainWorkspaces,
 main.main > #mainProfiles,
 main.main > #mainInsights,
 main.main > #mainLogs{display:none;}
-main.main:not(.showing-home):not(.showing-overview):not(.showing-repos):not(.showing-settings):not(.showing-skills):not(.showing-memory):not(.showing-tasks):not(.showing-kanban):not(.showing-workspaces):not(.showing-profiles):not(.showing-insights):not(.showing-logs):not(.showing-plugin):not(.showing-pluginhub) > #mainChat{display:flex;}
+main.main:not(.showing-home):not(.showing-overview):not(.showing-repos):not(.showing-lineage):not(.showing-settings):not(.showing-skills):not(.showing-memory):not(.showing-tasks):not(.showing-kanban):not(.showing-workspaces):not(.showing-profiles):not(.showing-insights):not(.showing-logs):not(.showing-plugin):not(.showing-pluginhub) > #mainChat{display:flex;}
 main.main.showing-home > #mainHome{display:flex;overflow-y:auto;}
 main.main.showing-overview > #mainOverview{display:flex;overflow-y:auto;}
 main.main > #mainOverview{display:none;}
 main.main.showing-repos > #mainRepos{display:flex;overflow-y:auto;}
 main.main > #mainRepos{display:none;}
+main.main.showing-lineage > #mainLineage{display:flex;overflow-y:auto;}
+main.main > #mainLineage{display:none;}
 main.main.showing-settings > #mainSettings{display:flex;overflow-y:auto;}
 main.main.showing-skills > #mainSkills{display:flex;}
 main.main.showing-memory > #mainMemory{display:flex;}
@@ -4677,7 +4679,7 @@ main.main.showing-pluginhub > #mainPluginhub{display:flex;overflow-y:auto;}
 /* ── GBAutomation Overview panel (plan B5) ── */
 /* Ported from 9119 gbhub-* classes, adapted to webui theme tokens. Brand
    terracotta (#d97757) is the canonical GBAuto SOT hex and kept literal. */
-#mainOverview,#mainRepos{flex-direction:column;}
+#mainOverview,#mainRepos,#mainLineage{flex-direction:column;}
 .gbhub-scroll{width:100%;max-width:1040px;margin:0 auto;padding:32px 24px 64px;}
 .gbhub-page{display:grid;width:100%;gap:16px;color:var(--text);}
 .gbhub-hero,
@@ -4744,7 +4746,56 @@ main.main.showing-pluginhub > #mainPluginhub{display:flex;overflow-y:auto;}
 .gbhub-repo-card li code{flex-shrink:0;color:#d97757;font-size:11px;}
 .gbhub-repo-card li span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text);}
 .gbhub-empty-state{padding:32px 16px;border:1px dashed var(--border);border-radius:8px;background:var(--surface);color:var(--muted);text-align:center;font-size:13px;}
+/* PRD Lineage panel (plan B7) -- coverage-bar + table/detail MVP (no SVG funnel) */
+.lineage-note{padding:10px 14px;border:1px solid rgba(217,119,87,.4);border-radius:8px;background:rgba(217,119,87,.08);color:var(--text);font-size:12.5px;}
+.lineage-toolbar{display:flex;align-items:center;gap:12px;flex-wrap:wrap;}
+.lineage-toolbar label{display:flex;align-items:center;gap:8px;flex:1 1 260px;min-width:0;padding:8px 12px;border:1px solid var(--border);border-radius:8px;background:var(--input-bg);color:var(--muted);}
+.lineage-toolbar label:focus-within{border-color:rgba(217,119,87,.5);}
+.lineage-toolbar input{flex:1;min-width:0;border:none;background:transparent;color:var(--text);font:inherit;font-size:13px;outline:none;}
+.lineage-scope-pills{display:flex;flex-wrap:wrap;gap:6px;}
+.lineage-scope-pills button{padding:5px 11px;border:1px solid var(--border);border-radius:999px;background:var(--input-bg);color:var(--muted);font:inherit;font-size:11.5px;cursor:pointer;}
+.lineage-scope-pills button.is-active{border-color:rgba(217,119,87,.55);background:rgba(217,119,87,.12);color:var(--text);}
+.lineage-bars{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;}
+.lineage-bar{display:grid;gap:7px;align-content:start;padding:14px;border:1px solid var(--border);border-radius:8px;background:var(--surface);text-align:left;font:inherit;cursor:pointer;transition:border-color .16s ease,box-shadow .16s ease;}
+.lineage-bar:hover{border-color:rgba(217,119,87,.42);box-shadow:0 8px 24px -18px rgba(0,0,0,.5);}
+.lineage-bar.is-active{border-color:rgba(217,119,87,.6);background:rgba(217,119,87,.08);}
+.lineage-bar-top{display:flex;align-items:baseline;justify-content:space-between;}
+.lineage-bar-top strong{color:var(--text);font-family:var(--font-ui);font-size:13px;font-weight:600;}
+.lineage-bar-top em{color:#d97757;font-style:normal;font-weight:700;font-size:14px;}
+.lineage-bar-track{display:block;height:7px;border-radius:999px;background:var(--input-bg);overflow:hidden;}
+.lineage-bar-fill{display:block;height:100%;border-radius:999px;background:linear-gradient(90deg,#d97757,#b85a3e);}
+.lineage-bar-sub{color:var(--muted);font-size:11px;line-height:1.35;}
+.lineage-layout{display:grid;grid-template-columns:minmax(0,1fr) minmax(280px,360px);gap:16px;align-items:start;}
+.lineage-list{display:grid;gap:8px;align-content:start;}
+.lineage-row{display:grid;grid-template-columns:minmax(0,1fr) auto auto;align-items:center;gap:12px;padding:12px 14px;border:1px solid var(--border);border-radius:8px;background:var(--surface);text-align:left;font:inherit;cursor:pointer;transition:border-color .16s ease;}
+.lineage-row:hover{border-color:rgba(217,119,87,.42);}
+.lineage-row.is-active{border-color:rgba(217,119,87,.6);background:rgba(217,119,87,.06);}
+.lineage-row-main{display:grid;gap:5px;min-width:0;}
+.lineage-row-title{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text);font-family:var(--font-ui);font-size:14px;font-weight:600;}
+.lineage-row-meta{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+.lineage-client{padding:2px 9px;border:1px solid;border-radius:999px;font-size:10.5px;font-weight:700;letter-spacing:.02em;}
+.lineage-status{color:var(--muted);font-size:11px;text-transform:capitalize;}
+.lineage-row-pct{color:var(--text);font-family:var(--font-ui);font-weight:700;font-size:14px;}
+.lineage-pills{display:inline-flex;gap:5px;flex-wrap:wrap;}
+.lineage-chip{display:inline-flex;align-items:center;padding:2px 8px;border-radius:999px;border:1px solid var(--border);background:var(--input-bg);color:var(--muted);font-size:10.5px;font-weight:600;}
+.lineage-chip.good{border-color:rgba(79,157,105,.5);background:rgba(79,157,105,.14);color:#4F9D69;}
+.lineage-chip.bad{border-color:rgba(185,74,72,.45);background:rgba(185,74,72,.10);color:#b94a48;}
+.lineage-detail{position:sticky;top:16px;display:grid;gap:14px;align-content:start;padding:18px;border:1px solid var(--border);border-radius:8px;background:var(--surface);box-shadow:0 1px 2px rgba(0,0,0,.04);}
+.lineage-detail h3{margin:0;color:var(--text);font-family:var(--font-ui);font-size:16px;font-weight:600;line-height:1.2;}
+.lineage-detail h4{margin:0 0 6px;color:var(--text);font-size:12px;font-weight:700;letter-spacing:.02em;}
+.lineage-detail-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;}
+.lineage-detail-grid span{display:grid;gap:2px;padding:8px;border:1px solid var(--border);border-radius:6px;background:var(--input-bg);color:var(--muted);font-size:10.5px;text-align:center;}
+.lineage-detail-grid b{color:var(--text);font-size:16px;}
+.lineage-detail-list{display:grid;gap:7px;margin:0;padding:0;list-style:none;}
+.lineage-detail-list li{display:grid;gap:2px;}
+.lineage-detail-list li span{color:var(--text);font-size:12px;}
+.lineage-detail-list li small{color:var(--muted);font-size:11px;}
+.lineage-detail-list code{color:#d97757;font-size:11px;}
+.lineage-tag-cloud{display:flex;flex-wrap:wrap;gap:5px;}
 @media (max-width:1024px){
+  .lineage-bars{grid-template-columns:repeat(2,minmax(0,1fr));}
+  .lineage-layout{grid-template-columns:1fr;}
+  .lineage-detail{position:static;}
   .gbhub-repo-grid{grid-template-columns:1fr;}
   .gbhub-stat-grid,
   .gbhub-dag-strip > div{grid-template-columns:repeat(2,minmax(0,1fr));}
@@ -4754,7 +4805,9 @@ main.main.showing-pluginhub > #mainPluginhub{display:flex;overflow-y:auto;}
 @media (max-width:640px){
   .gbhub-stat-grid,
   .gbhub-spoke-grid,
+  .lineage-bars,
   .gbhub-dag-strip > div{grid-template-columns:1fr;}
+  .lineage-detail-grid{grid-template-columns:repeat(2,minmax(0,1fr));}
   .gbhub-badge{position:static;margin-top:12px;}
 }
 

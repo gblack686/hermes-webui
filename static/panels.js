@@ -41,7 +41,7 @@ const APP_TITLEBAR_KEYS = {
   memory: 'tab_memory', workspaces: 'tab_workspaces',
   profiles: 'tab_profiles', todos: 'tab_todos', insights: 'tab_insights', logs: 'tab_logs', settings: 'tab_settings',
 };
-const MAIN_VIEW_PANELS = ['home','overview','repos','settings','skills','memory','tasks','kanban','workspaces','profiles','insights','logs','plugin','pluginhub'];
+const MAIN_VIEW_PANELS = ['home','overview','repos','lineage','settings','skills','memory','tasks','kanban','workspaces','profiles','insights','logs','plugin','pluginhub'];
 const MAIN_VIEW_SIDEBAR_PANEL_FALLBACKS = { plugin: 'settings' };
 
 /**
@@ -316,6 +316,7 @@ async function switchPanel(name, opts = {}) {
   if (nextPanel === 'home') _focusHomeComposer();
   if (nextPanel === 'overview') await loadOverview();
   if (nextPanel === 'repos') await loadRepos();
+  if (nextPanel === 'lineage') await loadLineage();
   if (nextPanel === 'tasks') await loadCrons();
   if (nextPanel === 'kanban') await loadKanban();
   if (nextPanel === 'skills') await loadSkills();
@@ -729,6 +730,270 @@ async function loadRepos(force){
   _reposData = await _overviewFetchJson('/repos/repos-manifest.json');
   _reposLoaded = true;
   renderRepos();
+}
+
+// ── PRD Lineage panel (plan B7) ──
+// Hand-port of 9119's PrdLineagePage, MVP variant: per the plan, the heavy
+// funnel/sankey SVGs are dropped in favour of a coverage-bar + table/detail
+// layout to keep effort at M. Reads the same B0a static snapshot
+// (/gbauto-lineage/prd-lineage.json) the route already allow-lists. No backend,
+// no 9119 token scheme. Tenant scoping reuses the SAME ported
+// TENANT_CLIENT_ALIASES / client_slug model as Overview/Repos (REQUIRED per plan
+// decision #6): the snapshot is pre-scoped at generation time and this is the
+// client-side guard. Helpers (_ovEsc / _overviewClientColor /
+// _overviewRelativeTime / _overviewTenantAllows / _overviewActiveTenant /
+// _overviewFetchJson) are reused from the Overview panel above.
+let _lineageLoaded = false;
+let _lineageData = null;
+let _lineageQuery = '';
+let _lineageScope = 'tenant';      // 'tenant' | 'all' | <client>
+let _lineageStage = 'all';         // 'all' | 'missing-sprint' | 'missing-kanban' | 'missing-commit' | 'missing-pr'
+let _lineageSelectedId = null;
+
+const LINEAGE_STAGES = [
+  { key: 'hasSprint', label: 'Sprint', filter: 'missing-sprint', sub: 'goal links' },
+  { key: 'hasKanban', label: 'Kanban', filter: 'missing-kanban', sub: 'board cards' },
+  { key: 'hasCommit', label: 'Commit', filter: 'missing-commit', sub: 'git evidence' },
+  { key: 'hasPr', label: 'PR', filter: 'missing-pr', sub: 'review receipts' },
+];
+
+function _lineagePrds(data){
+  return (data && Array.isArray(data.prds)) ? data.prds : [];
+}
+function _lineageLin(prd){
+  return (prd && prd.lineage) || {};
+}
+function _lineageStageMatches(prd, filter){
+  const lin = _lineageLin(prd);
+  if (filter === 'missing-sprint') return !lin.hasSprint;
+  if (filter === 'missing-kanban') return !lin.hasKanban;
+  if (filter === 'missing-commit') return !lin.hasCommit;
+  if (filter === 'missing-pr') return !lin.hasPr;
+  return true;
+}
+function _lineageSearchable(prd){
+  const lin = _lineageLin(prd);
+  return [
+    prd.prdId, prd.title, prd.client, prd.status, prd.priority, prd.path,
+    (prd.tags || []).join(' '), (prd.components || []).join(' '),
+    (prd.hermesProfiles || []).join(' '),
+    (prd.sprintLinks || []).map((l) => `${l.sprintId || ''} ${l.rockId || ''}`).join(' '),
+    (prd.kanbanLinks || []).map((l) => `${l.taskId || ''} ${l.teamId || ''} ${l.profile || ''}`).join(' '),
+    (prd.commits || []).map((c) => `${c.repo || ''} ${c.message || ''} ${c.shortSha || ''}`).join(' '),
+    (prd.prs || []).map((p) => `${p.repository || ''} ${p.title || ''} ${p.number || ''}`).join(' '),
+    String(lin.coveragePct || ''),
+  ].filter(Boolean).join(' ').toLowerCase();
+}
+function _lineageScopedPrds(data, tenant){
+  const prds = _lineagePrds(data);
+  if (_lineageScope === 'all') return prds;
+  if (_lineageScope === 'tenant') return prds.filter((p) => _overviewTenantAllows(tenant, p && p.client));
+  return prds.filter((p) => (p && p.client) === _lineageScope);
+}
+function _lineagePct(count, total){
+  return total ? Math.round((count / total) * 100) : 0;
+}
+function _lineageCoveragePills(prd){
+  const lin = _lineageLin(prd);
+  return `<div class="lineage-pills">` + LINEAGE_STAGES.map((s) => (
+    `<span class="lineage-chip ${lin[s.key] ? 'good' : 'bad'}">${_ovEsc(s.label)}</span>`
+  )).join('') + `</div>`;
+}
+function _lineageStageBar(label, sub, filter, count, total){
+  const pct = _lineagePct(count, total);
+  const missing = total - count;
+  const active = _lineageStage === filter;
+  return `<button type="button" class="lineage-bar ${active ? 'is-active' : ''}" onclick="onLineageStage('${_ovEsc(filter)}')">`
+    + `<span class="lineage-bar-top"><strong>${_ovEsc(label)}</strong><em>${_ovEsc(pct)}%</em></span>`
+    + `<span class="lineage-bar-track"><span class="lineage-bar-fill" style="width:${_ovEsc(pct)}%"></span></span>`
+    + `<span class="lineage-bar-sub">${_ovEsc(count)} linked &middot; ${_ovEsc(missing)} missing &middot; ${_ovEsc(sub)}</span>`
+    + `</button>`;
+}
+function _lineageRow(prd, selected){
+  const lin = _lineageLin(prd);
+  const color = _overviewClientColor(prd.client);
+  return `<button type="button" class="lineage-row ${selected ? 'is-active' : ''}" onclick="onLineageSelect('${_ovEsc(prd.prdId)}')">`
+    + `<span class="lineage-row-main">`
+    +   `<span class="lineage-row-title">${_ovEsc(prd.title || prd.prdId)}</span>`
+    +   `<span class="lineage-row-meta">`
+    +     `<span class="lineage-client" style="border-color:${_ovEsc(color)};color:${_ovEsc(color)}">${_ovEsc(prd.client)}</span>`
+    +     `<span class="lineage-status">${_ovEsc(prd.status || '')}</span>`
+    +   `</span>`
+    + `</span>`
+    + _lineageCoveragePills(prd)
+    + `<span class="lineage-row-pct">${_ovEsc(lin.coveragePct != null ? lin.coveragePct : 0)}%</span>`
+    + `</button>`;
+}
+function _lineageDetail(prd){
+  if (!prd){
+    return `<aside class="lineage-detail">`
+      + `<p class="gbhub-eyebrow">Selected spec</p>`
+      + `<h3>No spec selected</h3>`
+      + `<p class="gbhub-muted">Select a spec to inspect its sprint, Kanban, commit, and PR evidence.</p>`
+      + `</aside>`;
+  }
+  const lin = _lineageLin(prd);
+  const listOrEmpty = (items, empty) => items.length
+    ? `<ul class="lineage-detail-list">${items.join('')}</ul>`
+    : `<p class="gbhub-muted">${_ovEsc(empty)}</p>`;
+  const sprint = listOrEmpty((prd.sprintLinks || []).map((l) => (
+    `<li><span>${_ovEsc(l.sprintId || 'sprint tbd')} / ${_ovEsc(l.rockId || 'rock tbd')}</span>`
+    + `<small>${_ovEsc(l.relationship || 'linked')} &middot; ${_ovEsc(l.status || 'status tbd')}</small></li>`
+  )), 'No sprint rock link yet.');
+  const kanban = listOrEmpty((prd.kanbanLinks || []).map((l) => (
+    `<li><span>${_ovEsc(l.taskId || l.parentTaskId || l.runId || 'task tbd')}</span>`
+    + `<small>${_ovEsc(l.teamId || l.profile || 'team tbd')} &middot; ${_ovEsc(l.status || 'status tbd')}</small></li>`
+  )), 'No Kanban task assignment yet.');
+  const evidence = listOrEmpty(
+    (prd.commits || []).map((c) => (
+      `<li><span><code>${_ovEsc((c.shortSha || c.sha || '').slice(0, 7))}</code> ${_ovEsc(c.repo || 'repo')}</span>`
+      + `<small>${_ovEsc(c.message || 'No commit message')}</small></li>`
+    )).concat((prd.prs || []).map((p) => (
+      `<li><span>${_ovEsc(p.repository || 'repo')} #${_ovEsc(p.number != null ? p.number : '?')}</span>`
+      + `<small>${_ovEsc(p.title || 'No PR title')} &middot; ${_ovEsc(p.status || 'status tbd')}</small></li>`
+    ))), 'No commit or PR receipt connected yet.');
+  const tags = Array.from(new Set([].concat(prd.tags || [], prd.components || [], prd.hermesProfiles || [])
+    .filter(Boolean))).slice(0, 16);
+  const tagCloud = tags.length
+    ? `<div class="lineage-tag-cloud">${tags.map((t) => `<span class="lineage-chip">${_ovEsc(t)}</span>`).join('')}</div>`
+    : '';
+  return `<aside class="lineage-detail">`
+    + `<p class="gbhub-eyebrow">Selected spec</p>`
+    + `<h3>${_ovEsc(prd.title || prd.prdId)}</h3>`
+    + `<p class="gbhub-muted">${_ovEsc(prd.prdId)} &middot; ${_ovEsc(lin.coveragePct != null ? lin.coveragePct : 0)}% coverage</p>`
+    + _lineageCoveragePills(prd)
+    + `<div class="lineage-detail-grid">`
+    +   `<span><b>${_ovEsc((prd.sprintLinks || []).length)}</b>Sprint</span>`
+    +   `<span><b>${_ovEsc((prd.kanbanLinks || []).length)}</b>Kanban</span>`
+    +   `<span><b>${_ovEsc((prd.commits || []).length)}</b>Commits</span>`
+    +   `<span><b>${_ovEsc((prd.prs || []).length)}</b>PRs</span>`
+    + `</div>`
+    + `<section><h4>Sprint goals</h4>${sprint}</section>`
+    + `<section><h4>Kanban dispatch</h4>${kanban}</section>`
+    + `<section><h4>Commits &amp; PRs</h4>${evidence}</section>`
+    + tagCloud
+    + `</aside>`;
+}
+function renderLineage(){
+  const container = document.getElementById('lineageContent');
+  if (!container) return;
+  const data = _lineageData;
+
+  if (!data){
+    container.innerHTML = ''
+      + `<section class="gbhub-hero">`
+      +   `<div class="gbhub-brand-row"><span class="gbhub-mark">gb</span><span>GBAutomation Spine</span></div>`
+      +   `<h2>PRD Lineage</h2>`
+      +   `<p class="gbhub-muted">PRD lineage snapshot unavailable.</p>`
+      + `</section>`
+      + `<section class="gbhub-empty-state">PRD lineage snapshot unavailable. Regenerate the <code>gbauto-lineage/prd-lineage.json</code> snapshot.</section>`;
+    return;
+  }
+
+  const meta = data._meta || {};
+  const tenant = _overviewActiveTenant(meta);
+  const scopedPrds = _lineageScopedPrds(data, tenant);
+
+  const normalized = String(_lineageQuery || '').trim().toLowerCase();
+  const searched = normalized
+    ? scopedPrds.filter((p) => _lineageSearchable(p).indexOf(normalized) !== -1)
+    : scopedPrds;
+  const filtered = searched.filter((p) => _lineageStageMatches(p, _lineageStage));
+
+  const total = filtered.length;
+  const cover = {
+    sprint: _lineagePct(filtered.filter((p) => _lineageLin(p).hasSprint).length, total),
+    kanban: _lineagePct(filtered.filter((p) => _lineageLin(p).hasKanban).length, total),
+    commit: _lineagePct(filtered.filter((p) => _lineageLin(p).hasCommit).length, total),
+    pr: _lineagePct(filtered.filter((p) => _lineageLin(p).hasPr).length, total),
+  };
+
+  const selected = (filtered.find((p) => p.prdId === _lineageSelectedId)) || filtered[0] || null;
+
+  const clientOptions = Array.isArray(data.clients) ? data.clients.map((c) => c.client) : [];
+
+  const ICON_SEARCH = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.35-4.35"/></svg>';
+  const ICON_FLOW = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="6" height="6" rx="1"/><rect x="15" y="15" width="6" height="6" rx="1"/><path d="M9 6h6a2 2 0 0 1 2 2v7"/></svg>';
+
+  const scopePills = [
+    `<button type="button" class="${_lineageScope === 'tenant' ? 'is-active' : ''}" onclick="onLineageScope('tenant')">${_ovEsc(tenant)}</button>`,
+    `<button type="button" class="${_lineageScope === 'all' ? 'is-active' : ''}" onclick="onLineageScope('all')">Admin all</button>`,
+  ].concat(clientOptions.slice(0, 6).map((c) => (
+    `<button type="button" class="${_lineageScope === c ? 'is-active' : ''}" onclick="onLineageScope('${_ovEsc(c)}')">${_ovEsc(c)}</button>`
+  ))).join('');
+
+  const bars = LINEAGE_STAGES.map((s) => {
+    const count = filtered.filter((p) => _lineageLin(p)[s.key]).length;
+    return _lineageStageBar(s.label, s.sub, s.filter, count, total);
+  }).join('');
+
+  const rows = filtered.length
+    ? filtered.map((p) => _lineageRow(p, selected && selected.prdId === p.prdId)).join('')
+    : `<section class="gbhub-empty-state">${scopedPrds.length ? 'No specs match the filter.' : 'No specs in scope.'}</section>`;
+
+  const warnings = Array.isArray(data.warnings) && data.warnings.length
+    ? `<section class="lineage-note">${_ovEsc(data.warnings.join(' | '))}</section>`
+    : '';
+
+  container.innerHTML = ''
+    + `<section class="gbhub-hero">`
+    +   `<div class="gbhub-brand-row"><span class="gbhub-mark">gb</span><span>GBAutomation Spine</span></div>`
+    +   `<span class="gbhub-badge">${ICON_FLOW} spec to delivery</span>`
+    +   `<h2>Delivery Funnel</h2>`
+    +   `<p>Work specs flowing into sprint goals, Kanban cards, commits, and PR receipts. The default view follows the active tenant; admin all-client scope is an explicit filter.</p>`
+    +   `<small class="gbhub-tenant">Tenant scope: <strong>${_ovEsc(_lineageScope === 'all' ? 'admin: all clients' : (_lineageScope === 'tenant' ? tenant : _lineageScope))}</strong>`
+    +     (meta.generated_at || data.generatedAt ? ` &middot; snapshot ${_ovEsc(_overviewRelativeTime(meta.generated_at || data.generatedAt) || (meta.generated_at || data.generatedAt))}` : '')
+    +   `</small>`
+    + `</section>`
+    + `<section class="gbhub-stat-grid" aria-label="PRD lineage coverage">`
+    +   _overviewStatCard({ accent: '#D97757', label: 'Specs', sub: `in scope of ${_ovEsc((data.counts && data.counts.prds) || _lineagePrds(data).length)} indexed`, value: total })
+    +   _overviewStatCard({ accent: '#8A5FBF', label: 'Sprint Coverage', sub: 'goal links', value: `${cover.sprint}%` })
+    +   _overviewStatCard({ accent: '#4F9D69', label: 'Commit Coverage', sub: 'git evidence', value: `${cover.commit}%` })
+    +   _overviewStatCard({ accent: '#06b6d4', label: 'PR Coverage', sub: 'review receipts', value: `${cover.pr}%` })
+    + `</section>`
+    + warnings
+    + `<section class="lineage-toolbar">`
+    +   `<label>${ICON_SEARCH}<input id="lineageFilterInput" type="search" autocomplete="off" value="${_ovEsc(_lineageQuery)}" placeholder="Filter specs, cards, commits, tags" oninput="onLineageFilterInput(this.value)"></label>`
+    +   `<div class="lineage-scope-pills">${scopePills}</div>`
+    + `</section>`
+    + `<section class="lineage-bars" aria-label="Stage coverage bars">${bars}</section>`
+    + `<div class="lineage-layout">`
+    +   `<div class="lineage-list">${rows}</div>`
+    +   _lineageDetail(selected)
+    + `</div>`;
+}
+function onLineageFilterInput(value){
+  _lineageQuery = value;
+  _lineageSelectedId = null;
+  renderLineage();
+  const input = document.getElementById('lineageFilterInput');
+  if (input){
+    input.focus();
+    try { const n = input.value.length; input.setSelectionRange(n, n); } catch (_e) {}
+  }
+}
+function onLineageScope(value){
+  _lineageScope = value;
+  _lineageStage = 'all';
+  _lineageSelectedId = null;
+  renderLineage();
+}
+function onLineageStage(value){
+  _lineageStage = (_lineageStage === value) ? 'all' : value;
+  _lineageSelectedId = null;
+  renderLineage();
+}
+function onLineageSelect(prdId){
+  _lineageSelectedId = prdId;
+  renderLineage();
+}
+async function loadLineage(force){
+  const container = document.getElementById('lineageContent');
+  if (!container) return;
+  if (_lineageLoaded && !force) return;
+  _lineageData = await _overviewFetchJson('/gbauto-lineage/prd-lineage.json');
+  _lineageLoaded = true;
+  renderLineage();
 }
 
 // ── Cron panel ──
