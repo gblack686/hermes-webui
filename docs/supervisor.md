@@ -78,10 +78,29 @@ sees the long-lived server as the original child. ``KeepAlive=true`` /
         <string>/Users/yourname</string>
         <key>PATH</key>
         <string>/usr/local/bin:/usr/bin:/bin</string>
+        <!-- GBauto unified shell: pin the kanban store + default board so the
+             WebUI /kanban reads the SAME database the dispatcher/tacdispatch
+             writes to. Without HERMES_HOME the WebUI falls back to the OS
+             platform data dir (a separate, empty kanban store) and /kanban
+             renders "No Kanban data". HERMES_KANBAN_BOARD makes the real
+             gbautomation board the default instead of the empty "default". -->
+        <key>HERMES_HOME</key>
+        <string>/Users/yourname/.hermes</string>
+        <key>HERMES_KANBAN_BOARD</key>
+        <string>gbautomation</string>
     </dict>
 </dict>
 </plist>
 ```
+
+> **GBauto note (kanban home pinning):** `HERMES_HOME` and `HERMES_KANBAN_BOARD`
+> above are required for the unified GBauto shell. `hermes_cli.kanban_db`
+> resolves its board root from `HERMES_KANBAN_HOME` → `HERMES_HOME` → OS
+> platform default; if none is set the WebUI process reads a *different, empty*
+> kanban store than the CLI/dispatcher and the board looks empty even though
+> tasks exist. Keep these in sync with whatever `~/.hermes` the dispatcher
+> (`tacdispatch.py`) uses, and set the board slug to the live board
+> (`gbautomation` on the Mac Mini).
 
 Load:
 

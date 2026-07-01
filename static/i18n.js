@@ -872,6 +872,8 @@ const LOCALES = {
     project_name_prompt: 'Project name:',
     // Sidebar & Tabs
     tab_chat: 'Chat',
+    tab_home: 'Home',
+    tab_artifacts: 'Artifacts',
     tab_tasks: 'Tasks',
     tab_skills: 'Skills',
     tab_memory: 'Memory',
@@ -2511,6 +2513,8 @@ const LOCALES = {
     project_name_prompt: 'Nome progetto:',
     // Sidebar & Tabs
     tab_chat: 'Chat',
+    tab_home: 'Home',
+    tab_artifacts: 'Artifacts',
     tab_tasks: 'Task',
     tab_skills: 'Skill',
     tab_memory: 'Memoria',
@@ -7042,6 +7046,8 @@ const LOCALES = {
     project_name_prompt: 'Nombre del proyecto:',
     // Sidebar & Tabs
     tab_chat: 'Chat',
+    tab_home: 'Home',
+    tab_artifacts: 'Artifacts',
     tab_tasks: 'Tareas',
     tab_skills: 'Habilidades',
     tab_memory: 'Memoria',
@@ -8587,6 +8593,8 @@ const LOCALES = {
     project_name_prompt: 'Projektname:',
     // Sidebar & Tabs
     tab_chat: 'Chat',
+    tab_home: 'Home',
+    tab_artifacts: 'Artifacts',
     tab_tasks: 'Aufgaben',
     tab_skills: 'Skills',
     tab_memory: 'Gedächtnis',
@@ -13560,6 +13568,8 @@ const LOCALES = {
 
     // Sidebar & Tabs
     tab_chat: 'Chat',
+    tab_home: 'Home',
+    tab_artifacts: 'Artifacts',
     tab_tasks: 'Tarefas',
     tab_skills: 'Skills',
     tab_memory: 'Memória',
@@ -16736,6 +16746,8 @@ const LOCALES = {
     remove: 'Supprimer',
     project_name_prompt: 'Nom du projet :',
     tab_chat: 'Chat',
+    tab_home: 'Home',
+    tab_artifacts: 'Artifacts',
     tab_tasks: 'Tâches',
     tab_skills: 'Compétences',
     tab_memory: 'Mémoire',
@@ -21447,6 +21459,8 @@ const LOCALES = {
     dialog_confirm_btn: 'Xác nhận',
     // Sidebar & Tabs
     tab_chat: 'Chat',
+    tab_home: 'Home',
+    tab_artifacts: 'Artifacts',
     tab_tasks: 'Tác vụ',
     tab_skills: 'Kỹ năng',
     tab_memory: 'Bộ nhớ',

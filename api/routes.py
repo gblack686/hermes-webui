@@ -10028,6 +10028,16 @@ def handle_get(handler, parsed) -> bool:
         if result is False:
             return _kanban_unknown_endpoint(handler, parsed, "GET")
         return True
+    if parsed.path.startswith("/api/gbauto/"):
+        # GBauto unified shell native data routes (Phase 5). Auth-gated by the
+        # central check_auth (path not in PUBLIC_PATHS). No 8791 sidecar, no
+        # browser Supabase — the WebUI backend owns the index.
+        from api.gbauto_documents import handle_gbauto_get
+
+        result = handle_gbauto_get(handler, parsed)
+        if result is False:
+            return j(handler, {"error": "not found"}, status=404)
+        return True
     if parsed.path == "/api/wiki/status":
         return _handle_llm_wiki_status(handler, parsed)
     if parsed.path == "/api/wiki/browse":

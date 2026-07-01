@@ -1,0 +1,401 @@
+version: 1
+status: approval_example
+updated: 2026-07-01
+
+decision:
+  primary_shell:
+    app: hermes-webui
+    port: 8787
+    reason: "Keep the native authenticated WebUI shell as the single operator surface."
+  deprecated_surfaces:
+    - app: gbauto-dashboard-sidecar
+      port: 8791
+      action: scrap
+      reason: "No sidecar. Add data through native 8787 backend/plugin routes."
+    - app: official-hermes-dashboard
+      port: 9119
+      action: port_pages_into_8787
+      reason: "Do not iframe or keep a second operator dashboard."
+
+theme:
+  approved_base_candidate:
+    name: GBauto
+    skin_key: terracotta
+    source_css: static/style.css
+    source_selector: ':root[data-skin="terracotta"]'
+    source_line_start: 364
+    boot_label_source: static/boot.js
+    boot_label: "GBauto"
+    default_sources:
+      - static/index.html
+      - static/boot.js
+      - api/config.py
+  actual_css_excerpt: |
+    :root[data-skin="terracotta"]{
+      color-scheme:light;
+      --bg:#FAF9F5;--sidebar:#F0EEE6;--surface:#FFFEFA;--surface-subtle:#F7F4EC;--surface-subtle-hover:#EEE9DE;
+      --border:#E8E6DC;--border2:#D7D2C4;--border-subtle:#F0EDE4;--border-muted:#DDD8CA;
+      --text:#30302E;--strong:#141413;--muted:#87867F;--em:#3D3D3A;
+      --accent:#D97757;--accent-hover:#C76345;--accent-bg:rgba(217,119,87,0.10);--accent-bg-strong:rgba(217,119,87,0.18);--accent-text:#A94F35;
+      --blue:#6396D6;--gold:#D97757;--focus-ring:rgba(217,119,87,0.28);--focus-glow:rgba(217,119,87,0.10);
+      --input-bg:#FFFEFA;--hover-bg:rgba(48,48,46,0.05);--code-bg:#F0EEE6;--code-inline-bg:rgba(48,48,46,0.065);--code-text:#30302E;--pre-text:#30302E;
+      --topbar-bg:rgba(250,249,245,0.96);--main-bg:#FAF9F5;
+      --error:#C15F3C;--success:#6EA100;--warning:#B87916;--info:#6396D6;
+      --user-bubble-bg:#F0EEE6;--user-bubble-border:#E2DED2;--user-bubble-text:#30302E;--user-bubble-placeholder:#87867F;
+      --user-selection-bg:rgba(217,119,87,0.24);--user-selection-text:#141413;
+      --font-ui:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+      --font-mono:ui-monospace,"SFMono-Regular","SF Mono",Menlo,Consolas,"Liberation Mono",monospace;
+      font-family:var(--font-ui);
+    }
+    :root.dark[data-skin="terracotta"]{
+      color-scheme:dark;
+      --bg:#141413;--sidebar:#1E1D1A;--surface:#191917;--surface-subtle:#20201D;--surface-subtle-hover:#2A2925;
+      --border:#34332E;--border2:#4A473F;--border-subtle:#292824;--border-muted:#3D3A34;
+      --text:#EDEAE0;--strong:#FAF9F5;--muted:#B0AEA5;--em:#D8D4C8;
+      --accent:#D97757;--accent-hover:#E69072;--accent-bg:rgba(217,119,87,0.11);--accent-bg-strong:rgba(217,119,87,0.20);--accent-text:#E69072;
+      --blue:#7BA7DE;--gold:#D97757;--focus-ring:rgba(217,119,87,0.30);--focus-glow:rgba(217,119,87,0.12);
+      --input-bg:#191917;--hover-bg:rgba(237,234,224,0.055);--code-bg:#10100F;--code-inline-bg:rgba(237,234,224,0.08);--code-text:#F0EEE6;--pre-text:#EDEAE0;
+      --topbar-bg:rgba(20,20,19,0.94);--main-bg:#141413;
+      --error:#F08A6F;--success:#9BCB5A;--warning:#E6B15C;--info:#7BA7DE;
+      --user-bubble-bg:#282620;--user-bubble-border:#464238;--user-bubble-text:#FAF9F5;--user-bubble-placeholder:#B0AEA5;
+      --user-selection-bg:rgba(217,119,87,0.24);--user-selection-text:#FAF9F5;
+    }
+
+merge_strategy:
+  rule: "Keep every 8787 native page, then port every 9119 page into the 8787 shell using the GBauto skin/layout."
+  no_sidecar: true
+  no_iframe_9119: true
+  browser_supabase_reads: false
+  data_contract:
+    preferred: "8787 api routes and/or native Hermes plugins"
+    avoid:
+      - "127.0.0.1:8791 sidecar"
+      - "client-side Supabase queries"
+      - "9119 iframe embeds"
+  implementation_order:
+    - "Freeze GBauto theme tokens as the site baseline."
+    - "Add a page registry that drives nav, route ownership, and port status."
+    - "Map each 9119 built-in route to a 8787 route target."
+    - "Expose 9119 data needs through 8787 API/plugin routes."
+    - "Port one page at a time behind the 8787 shell."
+    - "Remove external dashboard-link behavior after parity."
+
+pages:
+  native_8787:
+    source: "hermes-webui/static/index.html data-panel"
+    keep_all: true
+    shell: gbauto_8787
+    items:
+      - id: chat
+        label: Chat
+        route: /chat
+        source_panel: chat
+        action: keep_native
+        priority: p0
+      - id: tasks
+        label: Tasks
+        route: /tasks
+        source_panel: tasks
+        action: keep_native
+        priority: p0
+      - id: kanban
+        label: Kanban
+        route: /kanban
+        source_panel: kanban
+        action: keep_native
+        priority: p0
+      - id: skills
+        label: Skills
+        route: /skills
+        source_panel: skills
+        action: keep_native
+        priority: p1
+      - id: memory
+        label: Memory
+        route: /memory
+        source_panel: memory
+        action: keep_native
+        priority: p1
+      - id: workspaces
+        label: Spaces
+        route: /workspaces
+        source_panel: workspaces
+        action: keep_native
+        priority: p1
+      - id: profiles
+        label: Profiles
+        route: /profiles
+        source_panel: profiles
+        action: keep_native
+        priority: p1
+      - id: todos
+        label: Todos
+        route: /todos
+        source_panel: todos
+        action: keep_native
+        priority: p1
+      - id: insights
+        label: Insights
+        route: /insights
+        source_panel: insights
+        action: keep_native
+        priority: p1
+      - id: logs
+        label: Logs
+        route: /logs
+        source_panel: logs
+        action: keep_native
+        priority: p1
+      - id: settings
+        label: Settings
+        route: /settings
+        source_panel: settings
+        action: keep_native
+        priority: p2
+
+  port_from_9119:
+    source: "hermes-agent/web/src/App.tsx built-in routes plus /api/dashboard/plugins manifests"
+    target_shell: gbauto_8787
+    items:
+      - id: official_home
+        label: Home
+        source_route: /home
+        target_route: /home
+        action: merge_with_8787_home
+        priority: p0
+      - id: official_chat
+        label: Chat
+        source_route: /chat
+        target_route: /chat
+        action: map_to_8787_chat_or_add_missing_controls
+        priority: p0
+      - id: official_sessions
+        label: Sessions
+        source_route: /sessions
+        target_route: /sessions
+        action: port
+        priority: p0
+      - id: official_artifacts
+        label: Artifacts/Documents
+        source_routes: [/artifacts, /documents]
+        target_route: /artifacts
+        action: port
+        priority: p0
+      - id: official_overview
+        label: Overview
+        source_route: /overview
+        target_route: /overview
+        action: port
+        priority: p1
+      - id: official_repos
+        label: Repos
+        source_route: /repos
+        target_route: /repos
+        action: port
+        priority: p1
+      - id: official_lineage
+        label: Lineage
+        source_route: /lineage
+        target_route: /lineage
+        action: port
+        priority: p1
+      - id: official_supabase
+        label: Supabase
+        source_route: /supabase
+        target_route: /supabase
+        action: port_server_backed_snapshot
+        priority: p1
+      - id: official_langfuse
+        label: Langfuse
+        source_route: /langfuse
+        target_route: /langfuse
+        action: port_server_backed_snapshot
+        priority: p1
+      - id: official_kanban_data
+        label: Kanban Data
+        source_route: /kanban-data
+        target_route: /kanban-data
+        action: merge_with_native_kanban
+        priority: p1
+      - id: official_analytics
+        label: Analytics
+        source_route: /analytics
+        target_route: /analytics
+        action: port
+        priority: p2
+      - id: official_models
+        label: Models
+        source_route: /models
+        target_route: /models
+        action: port_or_merge_with_settings_model_picker
+        priority: p2
+      - id: official_cron
+        label: Cron
+        source_route: /cron
+        target_route: /cron
+        action: port
+        priority: p2
+      - id: official_plugins
+        label: Plugins
+        source_route: /plugins
+        target_route: /plugins
+        action: port
+        priority: p2
+      - id: official_config
+        label: Config
+        source_route: /config
+        target_route: /config
+        action: merge_with_8787_settings
+        priority: p2
+      - id: official_env
+        label: Keys
+        source_route: /env
+        target_route: /env
+        action: port
+        priority: p2
+      - id: official_docs
+        label: Documentation
+        source_route: /docs
+        target_route: /docs
+        action: port
+        priority: p3
+      - id: official_profile_details
+        label: Profile Details
+        source_routes: [/profiles/:profileId, /profiles/teams/:teamId]
+        target_routes: [/profiles/:profileId, /profiles/teams/:teamId]
+        action: port_detail_routes
+        priority: p3
+      - id: official_dashboard_plugins
+        label: Dashboard Plugin Tabs
+        source_endpoint: /api/dashboard/plugins
+        target_rule: "Register each manifest tab.path in the 8787 page registry unless hidden."
+        action: discover_and_port
+        priority: p3
+
+design_footprint:
+  format: "Aura DESIGN.md visual DNA adapted into YAML"
+  status: approval_example
+  profile_consulted:
+    id: aura-web-designer
+    path: "gbautomation/second-brain/systems/hermes-profiles/tac/profiles/aura-web-designer.yaml"
+    rules_applied:
+      - "Retrieve before advising and cite local source paths."
+      - "Specify typography, spacing, layout grammar, surfaces, motion, and responsive states."
+      - "For GBauto pages, use cream, terracotta, Newsreader, Inter, muted technical surfaces, and restrained motion."
+      - "Treat DESIGN.md as visual DNA rather than production source to copy."
+  pattern_reference:
+    path: "gbautomation/artifacts/aura-templates/vesper-space/DESIGN.md"
+    extracted_shape:
+      - "frontmatter-style tokens for colors, typography, spacing, rounded, components, and motion"
+      - "short narrative sections for overview, colors, typography, spacing, layout, depth, components, motion, dos/donts, and accessibility"
+  home_sources:
+    route: /home
+    app: "hermes-agent official dashboard"
+    page_source: "hermes-agent/web/src/pages/HomePage.tsx"
+    css_source: "hermes-agent/web/src/index.css lines 1017-1295"
+    token_source: "hermes-agent/web/src/styles/gbauto-theme.css"
+    target_port: "hermes-webui 8787 /home"
+  footprint:
+    version: "1.0.0"
+    name: "GBauto Hermes Home"
+    description: "A cream report-paper home surface where chat is the primary action, route access sits one click away, and dashboard context is presented as a compact operational gallery."
+    colors:
+      ink: "#191919"
+      cream: "#F3F1E7"
+      cream_2: "#E6E4D9"
+      stone: "#D6D4C8"
+      terracotta: "#D97757"
+      terracotta_hover: "#B75F43"
+      muted: "#8C8A84"
+      shell_dark: "#041C1C"
+    typography:
+      display:
+        family: "Newsreader"
+        weights: [400, 500]
+        style: "Large editorial serif headings with tight line-height and zero tracking."
+      body:
+        family: "Inter"
+        weights: [300, 400, 500, 600]
+        style: "Compact operator UI copy with readable 1.5-1.55 line-height."
+      mono:
+        family: "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas"
+        style: "Small uppercase labels, route tabs, metadata, and command buttons."
+    spacing:
+      page_gap: "1rem"
+      hero_padding: "clamp(2.5rem, 6vw, 5rem) 1rem 1.25rem"
+      composer_width: "min(48rem, 100%)"
+      gallery_gap: "0.85rem"
+      card_padding: "0.68rem"
+      mobile_breakpoints:
+        tablet: "1024px switches route strip/gallery to two columns"
+        phone: "640px switches route strip/gallery to one column"
+    rounded:
+      home_cards: "0px in source unless inherited; keep crisp report-paper edges for this page"
+      gbauto_cards_elsewhere: "8px-14px tokenized radius from gbauto-theme.css"
+      pills: "999px only for explicit chip/pill controls"
+    layout:
+      structure:
+        - "hero prompt composer first"
+        - "five primary route buttons second"
+        - "five-card operational gallery third"
+      grid:
+        route_strip_desktop: "repeat(5, minmax(0, 1fr))"
+        gallery_desktop: "repeat(5, minmax(0, 1fr))"
+      hierarchy:
+        h1: "max-width 56rem, clamp(2.8rem, 7vw, 6.2rem), line-height 0.92"
+        intro: "max-width 42rem, muted ink at 0.98rem"
+        cards: "image, mono meta, serif label, clamped description, mono action"
+    surfaces:
+      hero: "cream paper with subtle 32px grid lines and soft white-to-cream gradient"
+      composer: "cream glass panel with light border and long soft shadow"
+      route_buttons: "thin ink border, translucent white fill, terracotta hover"
+      cards: "stone border, cream_2 translucent fill, image plate, terracotta hover border"
+      shell_relationship: "home page is a light GBauto paper island inside the darker Hermes operator shell"
+    components:
+      prompt_composer:
+        behavior: "textarea plus quick prompts plus Send to Hermes button"
+        target_8787: "wire to native WebUI chat session creation instead of 9119 navigate('/chat?prompt=...')"
+      route_strip:
+        items: [Overview, Repos, Skills, Langfuse, Artifacts]
+        target_8787: "map to registry-owned 8787 routes; hide unavailable routes until ported"
+      gallery_cards:
+        items: [Hermes Chat, Observability, Skills, Artifacts, Repos]
+        target_8787: "reuse card grammar for migrated dashboard destinations"
+    motion:
+      hover_duration: "160ms"
+      card_hover: "translateY(-2px)"
+      allowed: "subtle hover, focus, and loading states only"
+      avoid:
+        - "purple SaaS gradients"
+        - "decorative blobs"
+        - "heavy parallax"
+        - "nested cards"
+    responsive:
+      desktop: "5-column strip and gallery"
+      tablet: "2-column strip and gallery; composer footer stacks"
+      mobile: "single-column strip and gallery; preserve prompt-first flow"
+    accessibility:
+      - "Keep the hero h1 as the page landmark heading."
+      - "Use real links for route strip and gallery destinations."
+      - "Keep quick prompt buttons keyboard reachable and text non-overlapping."
+      - "Maintain visible focus states using terracotta/ink contrast."
+      - "Decorative gallery images should stay empty-alt unless a card needs visual meaning."
+    dos:
+      - "Keep chat as the first interaction on /home."
+      - "Use route cards to expose operational destinations without crowding the shell nav."
+      - "Keep typography editorial but compact enough for repeated operator use."
+      - "Use actual GBauto variables from static/style.css and gbauto-theme.css when porting."
+    donts:
+      - "Do not preserve 9119 as an iframe."
+      - "Do not add an 8791 sidecar for this page."
+      - "Do not query Supabase directly from browser code."
+      - "Do not turn /home into a marketing landing page."
+      - "Do not replace the WebUI shell with React-only dashboard assumptions."
+
+approval:
+  approve_theme_base: approved
+  approve_page_strategy: approved
+  approved_by: greg
+  approved_on: 2026-07-01
+  approval_note: "Operator authorized foundation + P0 page-port build (Phases 0-5 P0 slice) on 2026-07-01."
+  next_example_page_after_approval: official_home

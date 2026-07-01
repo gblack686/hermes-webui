@@ -4585,6 +4585,8 @@ body.resizing .sidebar{transition:none!important;}
    main.main.showing-<name> > #main<Name> { display:flex } rule. */
 .main-view{flex:1;min-height:0;min-width:0;display:flex;flex-direction:column;background:var(--bg);}
 main.main > #mainChat,
+main.main > #mainHome,
+main.main > #mainArtifacts,
 main.main > #mainSettings,
 main.main > #mainSkills,
 main.main > #mainMemory,
@@ -4594,7 +4596,9 @@ main.main > #mainWorkspaces,
 main.main > #mainProfiles,
 main.main > #mainInsights,
 main.main > #mainLogs{display:none;}
-main.main:not(.showing-settings):not(.showing-skills):not(.showing-memory):not(.showing-tasks):not(.showing-kanban):not(.showing-workspaces):not(.showing-profiles):not(.showing-insights):not(.showing-logs):not(.showing-plugin) > #mainChat{display:flex;}
+main.main:not(.showing-home):not(.showing-artifacts):not(.showing-settings):not(.showing-skills):not(.showing-memory):not(.showing-tasks):not(.showing-kanban):not(.showing-workspaces):not(.showing-profiles):not(.showing-insights):not(.showing-logs):not(.showing-plugin) > #mainChat{display:flex;}
+main.main.showing-home > #mainHome{display:flex;overflow-y:auto;}
+main.main.showing-artifacts > #mainArtifacts{display:flex;overflow-y:auto;}
 main.main.showing-settings > #mainSettings{display:flex;overflow-y:auto;}
 main.main.showing-skills > #mainSkills{display:flex;}
 main.main.showing-memory > #mainMemory{display:flex;}
@@ -6716,3 +6720,78 @@ html[data-conversation-outline="enabled"] #outlineToggleBtn:not([hidden]){displa
 /* Settings field highlight (mirrors msg-question-highlight / _highlightQuestionRow pattern) */
 .settings-field-highlight { animation: settings-field-pulse 1.6s ease-out; }
 @keyframes settings-field-pulse { 0% { box-shadow: 0 0 0 0 var(--focus-ring); } 35% { box-shadow: 0 0 0 4px var(--focus-ring); } 100% { box-shadow: 0 0 0 0 rgba(0, 0, 0, 0); } }
+
+/* ============================================================
+   GBauto Unified Shell — /home port + /artifacts panel
+   Plan: 2026-07-01-hermes-webui-unified-gbauto-shell-tac-plan
+   Design footprint: docs/rfcs/gbauto-webui-merge-approval.yaml
+   Home CSS ported 1:1 from hermes-agent web/src/index.css 1017-1295
+   (crisp report-paper edges, terracotta wash hover, 160ms).
+   ============================================================ */
+:root{
+  --gb-terracotta:#d97757;--gb-terracotta-hover:#b75f43;--gb-ink:#191919;
+  --gb-cream:#f3f1e7;--gb-cream-2:#e6e4d9;--gb-stone:#d6d4c8;--gb-text-mute:#8c8a84;
+  --gb-font-sans:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+  --gb-font-serif:'Newsreader',Georgia,serif;
+  --gb-mono:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;
+}
+
+/* ---- /home panel ---- */
+.home-chat-page{display:grid;gap:1rem;width:100%;color:#191919;padding:1rem;overflow-y:auto;font-family:var(--gb-font-sans);}
+.home-chat-hero{border:1px solid var(--gb-stone,#d6d4c8);
+  background:
+    linear-gradient(rgba(25,25,25,0.035) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(25,25,25,0.03) 1px,transparent 1px),
+    linear-gradient(135deg,#ffffff 0%,var(--gb-cream,#f3f1e7) 100%);
+  background-size:32px 32px,32px 32px,100% 100%,100% 100%;
+  padding:clamp(2.5rem,6vw,5rem) 1rem 1.25rem;display:grid;justify-items:center;gap:1rem;text-align:center;overflow:hidden;}
+.home-chat-kicker{display:inline-flex;align-items:center;gap:.4rem;border:1px solid rgba(217,119,87,0.24);background:rgba(255,255,255,0.46);padding:.42rem .7rem;font-family:var(--gb-mono);font-size:.66rem;text-transform:uppercase;letter-spacing:.08em;color:rgba(25,25,25,0.66);}
+.home-chat-hero h1{font-family:var(--gb-font-serif);font-size:clamp(2.8rem,7vw,6.2rem);font-weight:500;line-height:0.92;letter-spacing:0;max-width:56rem;margin:0;color:#191919;}
+.home-chat-intro{max-width:42rem;color:rgba(25,25,25,0.64);font-size:0.98rem;line-height:1.55;margin:0;}
+.home-chat-composer{width:min(48rem,100%);border:1px solid rgba(25,25,25,0.12);background:linear-gradient(135deg,#ffffff 0%,var(--gb-cream,#f3f1e7) 100%);box-shadow:0 24px 80px -58px rgba(25,25,25,0.68);padding:.85rem;}
+.home-chat-composer textarea{width:100%;min-height:8rem;resize:vertical;border:0;background:transparent;font:inherit;font-size:.95rem;line-height:1.5;outline:none;color:#191919;}
+.home-chat-composer-footer{display:flex;align-items:flex-end;justify-content:space-between;gap:1rem;border-top:1px solid rgba(25,25,25,0.1);padding-top:.7rem;}
+.home-chat-shortcuts{display:flex;flex-wrap:wrap;gap:.4rem;}
+.home-chat-shortcuts button,.home-chat-submit,.home-chat-route-strip a{border:1px solid rgba(25,25,25,0.14);background:rgba(255,255,255,0.38);color:#191919;text-decoration:none;cursor:pointer;transition:border-color 160ms ease,background 160ms ease;}
+.home-chat-shortcuts button{max-width:14rem;padding:.38rem .52rem;font-size:.68rem;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-family:var(--gb-font-sans);}
+.home-chat-submit{display:inline-flex;align-items:center;justify-content:center;gap:.45rem;min-height:2.35rem;padding:.5rem .78rem;background:#191919;color:var(--gb-cream,#f3f1e7);font-family:var(--gb-mono);font-size:.7rem;text-transform:uppercase;letter-spacing:.08em;border:1px solid #191919;}
+.home-chat-submit:disabled{cursor:not-allowed;opacity:.42;}
+.home-chat-route-strip{display:grid;gap:.85rem;grid-template-columns:repeat(5,minmax(0,1fr));}
+.home-chat-route-strip a{display:inline-flex;align-items:center;justify-content:center;gap:.45rem;min-width:0;padding:.7rem;font-family:var(--gb-mono);font-size:.68rem;text-transform:uppercase;letter-spacing:.06em;}
+.home-chat-route-strip a[aria-disabled="true"]{opacity:.4;pointer-events:none;cursor:not-allowed;}
+.home-chat-gallery{display:grid;gap:.85rem;grid-template-columns:repeat(5,minmax(0,1fr));}
+.home-chat-card{display:grid;gap:.62rem;min-width:0;overflow:hidden;border:1px solid var(--gb-stone,#d6d4c8);background:rgba(230,228,217,0.62);color:#191919;padding:.68rem;text-decoration:none;transition:border-color 160ms ease,transform 160ms ease;}
+.home-chat-card img{width:100%;aspect-ratio:4/3;object-fit:cover;border:1px solid rgba(25,25,25,0.08);}
+.home-chat-card-meta{color:rgba(25,25,25,0.54);font-family:var(--gb-mono);font-size:.58rem;text-transform:uppercase;letter-spacing:.08em;}
+.home-chat-card strong{font-family:var(--gb-font-serif);font-size:1.08rem;font-weight:540;line-height:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.home-chat-card p{display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;min-height:3.7em;color:rgba(25,25,25,0.62);font-size:.76rem;line-height:1.25;margin:0;}
+.home-chat-card-action{display:inline-flex;align-items:center;gap:.34rem;color:rgba(25,25,25,0.72);font-family:var(--gb-mono);font-size:.62rem;text-transform:uppercase;letter-spacing:.06em;}
+.home-chat-card:hover,.home-chat-route-strip a:not([aria-disabled="true"]):hover,.home-chat-shortcuts button:hover{border-color:rgba(217,119,87,0.5);background:rgba(217,119,87,0.1);}
+.home-chat-card:hover{transform:translateY(-2px);}
+@media(max-width:1024px){
+  .home-chat-route-strip,.home-chat-gallery{grid-template-columns:repeat(2,minmax(0,1fr));}
+  .home-chat-composer-footer{flex-direction:column;align-items:stretch;}
+}
+@media(max-width:640px){
+  .home-chat-route-strip,.home-chat-gallery{grid-template-columns:1fr;}
+}
+/* dark shell: home paper island keeps its light identity by design (footprint:
+   "light GBauto paper island inside the darker Hermes operator shell") */
+
+/* ---- /artifacts panel (Phase 4 P0) ---- */
+.gb-artifacts-page{display:flex;flex-direction:column;gap:.85rem;width:100%;padding:1rem;overflow-y:auto;font-family:var(--gb-font-sans);color:var(--text);}
+.gb-artifacts-head{display:flex;align-items:baseline;justify-content:space-between;gap:1rem;flex-wrap:wrap;}
+.gb-artifacts-head h2{font-family:var(--gb-font-serif);font-size:1.5rem;font-weight:500;margin:0;color:var(--strong);}
+.gb-artifacts-stale{font-family:var(--gb-mono);font-size:.62rem;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);}
+.gb-artifacts-toolbar{display:flex;gap:.5rem;flex-wrap:wrap;align-items:center;}
+.gb-artifacts-toolbar input[type="search"],.gb-artifacts-toolbar select{border:1px solid var(--border2);background:var(--input-bg);color:var(--text);border-radius:6px;padding:.42rem .6rem;font:inherit;font-size:.82rem;}
+.gb-artifacts-toolbar input[type="search"]{flex:1;min-width:12rem;}
+.gb-artifacts-grid{display:grid;gap:.85rem;grid-template-columns:repeat(auto-fill,minmax(15rem,1fr));}
+.gb-artifact-card{display:grid;gap:.5rem;border:1px solid var(--gb-stone,#d6d4c8);background:rgba(230,228,217,0.42);border-radius:8px;padding:.72rem;text-decoration:none;color:var(--text);transition:border-color 160ms ease,transform 160ms ease;}
+.gb-artifact-card:hover{border-color:rgba(217,119,87,0.5);transform:translateY(-2px);}
+.gb-artifact-card .gb-artifact-preview{width:100%;aspect-ratio:4/3;object-fit:cover;border:1px solid rgba(25,25,25,0.08);border-radius:4px;background:var(--surface-subtle);}
+.gb-artifact-meta{color:var(--muted);font-family:var(--gb-mono);font-size:.58rem;text-transform:uppercase;letter-spacing:.06em;}
+.gb-artifact-card strong{font-family:var(--gb-font-serif);font-size:1rem;font-weight:540;line-height:1.1;color:var(--strong);}
+.gb-artifact-card p{color:var(--em);font-size:.76rem;line-height:1.3;margin:0;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
+.gb-artifacts-empty,.gb-artifacts-error{padding:2rem;text-align:center;color:var(--muted);font-size:.9rem;}
+.gb-artifacts-error{color:var(--error);}

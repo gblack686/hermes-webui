@@ -1965,7 +1965,7 @@ const _SKINS=[
   {name:'Graphite', colors:['#FFFFFF','#D6D6D6','#242424']},
   {name:'GitHub', colors:['#0969DA','#1F883D','#242424']},
   {name:'Codex', colors:['#72B39A','#242624','#ECEBE4']},
-  {name:'Terracotta', colors:['#D97757','#F0EEE6','#141413']},
+  {name:'GBauto', value:'terracotta', colors:['#D97757','#F0EEE6','#141413']},
   {name:'Slate',    colors:['#334155','#475569','#64748b']},
   {name:'Poseidon', colors:['#0EA5E9','#0284C7','#0369A1']},
   {name:'Sisyphus', colors:['#A78BFA','#8B5CF6','#7C3AED']},
@@ -1996,7 +1996,7 @@ function _normalizeAppearance(theme,skin){
   const rawSkin=typeof skin==='string'?skin.trim().toLowerCase():'';
   const legacy=_LEGACY_THEME_MAP[rawTheme];
   const nextTheme=legacy?legacy.theme:(_VALID_THEMES.has(rawTheme)?rawTheme:'dark');
-  const nextSkin=_VALID_SKINS.has(rawSkin)?rawSkin:(legacy?legacy.skin:'default');
+  const nextSkin=_VALID_SKINS.has(rawSkin)?rawSkin:(legacy?legacy.skin:'terracotta');
   return {theme:nextTheme,skin:nextSkin};
 }
 
@@ -2168,7 +2168,7 @@ function _buildSkinPicker(activeSkin){
     btn.appendChild(labelEl);
     grid.appendChild(btn);
   }
-  _syncSkinPicker((activeSkin||'default').toLowerCase());
+  _syncSkinPicker((activeSkin||'terracotta').toLowerCase());
 }
 
 // ── Extension-registered skins (theme-registration capability) ───────────────
@@ -2264,7 +2264,7 @@ function registerHermesSkin(descriptor){
     _renderExtensionSkinStyles();
     // Refresh the picker if it's already built.
     if(document.getElementById('skinPickerGrid')){
-      _buildSkinPicker((localStorage.getItem('hermes-skin')||'default').toLowerCase());
+      _buildSkinPicker((localStorage.getItem('hermes-skin')||'terracotta').toLowerCase());
     }
     // If the user had previously selected this (now-available) skin, apply it.
     if((localStorage.getItem('hermes-skin')||'').toLowerCase()===key){
@@ -2483,7 +2483,11 @@ window._applyTitlebarProfileVisibility=_applyTitlebarProfileVisibility;
     // re-apply it once it loads. Without this, the boot sync would clobber the
     // saved choice before the extension runs.
     const lsSkinIsPendingExt=!!lsSkin&&lsSkin!=='default'&&!_VALID_SKINS.has(lsSkin)&&!_LEGACY_THEME_MAP[lsSkin];
-    const lsHasExplicitSkin=lsSkin&&lsSkin!=='default';
+    // 'terracotta' is now the shipped GBauto default (written to localStorage by
+    // the head pre-paint on first visit), so treat it like 'default': not an
+    // explicit user choice, so the server stays authoritative and we don't
+    // auto-POST it back and clobber a server-set skin. (GBauto unified shell)
+    const lsHasExplicitSkin=lsSkin&&lsSkin!=='default'&&lsSkin!=='terracotta';
     const lsHasExplicitTheme=lsTheme&&['system','light','dark'].includes(lsTheme);
     const theme=lsHasExplicitTheme?lsAppearance.theme:srvAppearance.theme;
     const skin=lsHasExplicitSkin?(lsSkinIsPendingExt?lsSkin:lsAppearance.skin):srvAppearance.skin;

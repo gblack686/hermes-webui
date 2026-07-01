@@ -7772,7 +7772,7 @@ _SETTINGS_DEFAULTS = {
     "ignore_agent_updates": False,  # keep WebUI update notices but suppress Agent update checks
     "whats_new_summary_enabled": False,  # show an LLM-written What's New summary before diff links
     "theme": "dark",  # light | dark | system
-    "skin": "default",  # accent color skin: default | ares | mono | graphite | slate | poseidon | sisyphus | charizard | sienna | catppuccin | nous
+    "skin": "terracotta",  # accent color skin: default | ares | mono | graphite | terracotta | slate | poseidon | sisyphus | charizard | sienna | catppuccin | nous
     "font_size": "default",  # small | default | large | xlarge
     "session_jump_buttons": False,  # show Start/End transcript jump pills
     "render_user_markdown": False,  # opt-in: render full markdown in user messages (#3870)
@@ -7870,7 +7870,7 @@ def _normalize_appearance(theme, skin) -> tuple[str, str]:
         nord      → ("dark", "slate")
         oled      → ("dark", "default")
 
-    Unknown / custom theme names fall back to ("dark", "default").  This is a
+    Unknown / custom theme names fall back to ("dark", "terracotta").  This is a
     behavior change vs. the pre-PR-#627 state, where the `theme` field was
     open-ended ("no enum gate -- allows custom themes").  Users who set a
     custom CSS theme via `data-theme` will need to re-apply via skin or
@@ -7885,10 +7885,10 @@ def _normalize_appearance(theme, skin) -> tuple[str, str]:
     if legacy:
         next_theme, legacy_skin = legacy
     elif raw_theme in _SETTINGS_THEME_VALUES:
-        next_theme, legacy_skin = raw_theme, "default"
+        next_theme, legacy_skin = raw_theme, "terracotta"
     else:
         # Unknown themes used to exist; default to dark so upgrades stay visually stable.
-        next_theme, legacy_skin = "dark", "default"
+        next_theme, legacy_skin = "dark", "terracotta"
     next_skin = (
         raw_skin
         if raw_skin in _SETTINGS_SKIN_VALUES
