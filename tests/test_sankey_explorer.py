@@ -28,6 +28,10 @@ class _FakeHandler:
         self.response_headers = []
         self.wfile = io.BytesIO()
         self.rfile = io.BytesIO()
+        # Request headers dict — auth.parse_cookie(handler) does
+        # handler.headers.get('Cookie'); without this the route crashes with
+        # AttributeError whenever auth is enabled (e.g. state leaked in-suite).
+        self.headers = {}
 
     def send_response(self, status):
         self.status = status
@@ -78,6 +82,15 @@ def test_excluded_table_and_column_patterns_preserved():
     # job_name / status remain chartable (token match, not substring).
     assert not se._is_excluded_column("job_name")
     assert not se._is_excluded_column("status")
+
+
+@pytest.fixture(autouse=True)
+def _sankey_auth_off(monkeypatch):
+    """These tests exercise route dispatch/logic, not auth. Force the sankey
+    auth gate open so results are deterministic regardless of global auth state
+    leaked by other tests in the full sharded suite (fixes an in-suite-only
+    AttributeError/401 flake in the route tests)."""
+    monkeypatch.setattr(routes, "_sankey_auth_ok", lambda handler: True)
 
 
 def test_synthetic_pii_table_is_filtered(monkeypatch):
@@ -172,3 +185,19 @@ def test_route_chart_unknown_table_is_404(monkeypatch):
         urlparse("/api/plugins/sankey-explorer/chart?table=client_core&dims=a,b"))
     assert handled is True
     assert handler.status == 404
+
+
+def test_route_tables_error_is_handled(monkeypatch):
+    # Regression: the tables error path must return True (handled), not a falsy
+    # None — otherwise the top-level dispatcher can emit a second 404 over the
+    # already-sent error. Guards the `return bad(...) or True` fix in
+    # _handle_sankey_tables (mirrors the chart error-path contract).
+    def _boom():
+        raise se.SankeyError("catalog unavailable")
+
+    monkeypatch.setattr(se, "tables_payload", _boom)
+    handler = _FakeHandler()
+    handled = routes.handle_get(
+        handler, urlparse("/api/plugins/sankey-explorer/tables"))
+    assert handled is True
+    assert handler.status == 400
