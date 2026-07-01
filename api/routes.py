@@ -10037,16 +10037,19 @@ def _sankey_auth_ok(handler) -> bool:
 
 def _handle_sankey_tables(handler, parsed) -> bool:
     """GET /api/plugins/sankey-explorer/tables — PII-safe catalog (metadata only)."""
+    # error paths `return bad(...) or True` for the same reason as
+    # _handle_sankey_chart: a falsy None return would let the dispatcher emit a
+    # second 404 over the already-sent error. Guarded by test_route_tables_error_is_handled.
     if not _sankey_auth_ok(handler):
-        return bad(handler, "Authentication required", status=401)
+        return bad(handler, "Authentication required", status=401) or True
     from api import sankey_explorer
     try:
         return j(handler, sankey_explorer.tables_payload()) or True
     except sankey_explorer.SankeyError as exc:
-        return bad(handler, str(exc), status=getattr(exc, "status", 400))
+        return bad(handler, str(exc), status=getattr(exc, "status", 400)) or True
     except Exception as exc:  # never crash the worker on a catalog read
         logger.warning("sankey-explorer tables failed: %s", exc)
-        return bad(handler, f"tables failed: {exc}", status=500)
+        return bad(handler, f"tables failed: {exc}", status=500) or True
 
 
 def _handle_sankey_chart(handler, parsed) -> bool:
@@ -10055,8 +10058,14 @@ def _handle_sankey_chart(handler, parsed) -> bool:
     Served with a sandbox CSP and no X-Frame-Options so the plugin page can
     embed it in an <iframe> (the shared j()/t() helpers force X-Frame-Options
     DENY, which would block same-origin framing)."""
+    # NB: error paths `return bad(...) or True`. bad() sends the error and
+    # returns None; without `or True` this handler returns a falsy None to the
+    # top-level handle_get dispatcher, which treats non-True as "not handled" and
+    # can emit a second 404 over the already-sent error (double response). The
+    # success path returns True, so error paths must too. Regression-guarded by
+    # test_route_chart_bad_request_is_400 / test_route_chart_unknown_table_is_404.
     if not _sankey_auth_ok(handler):
-        return bad(handler, "Authentication required", status=401)
+        return bad(handler, "Authentication required", status=401) or True
     from api import sankey_explorer
 
     qs = parse_qs(parsed.query or "")
@@ -10064,15 +10073,15 @@ def _handle_sankey_chart(handler, parsed) -> bool:
     dims = (qs.get("dims", [""])[0] or "").strip()
     weight = (qs.get("weight", [""])[0] or "").strip() or None
     if not table or not dims:
-        return bad(handler, "table and dims are required", status=400)
+        return bad(handler, "table and dims are required", status=400) or True
 
     try:
         html_doc = sankey_explorer.chart_html(table, dims, weight)
     except sankey_explorer.SankeyError as exc:
-        return bad(handler, str(exc), status=getattr(exc, "status", 400))
+        return bad(handler, str(exc), status=getattr(exc, "status", 400)) or True
     except Exception as exc:  # CLI missing / DNS / parse — surface as 500
         logger.warning("sankey-explorer chart failed: %s", exc)
-        return bad(handler, f"chart failed: {exc}", status=500)
+        return bad(handler, f"chart failed: {exc}", status=500) or True
 
     body = html_doc.encode("utf-8")
     handler.send_response(200)

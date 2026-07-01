@@ -172,3 +172,19 @@ def test_route_chart_unknown_table_is_404(monkeypatch):
         urlparse("/api/plugins/sankey-explorer/chart?table=client_core&dims=a,b"))
     assert handled is True
     assert handler.status == 404
+
+
+def test_route_tables_error_is_handled(monkeypatch):
+    # Regression: the tables error path must return True (handled), not a falsy
+    # None — otherwise the top-level dispatcher can emit a second 404 over the
+    # already-sent error. Guards the `return bad(...) or True` fix in
+    # _handle_sankey_tables (mirrors the chart error-path contract).
+    def _boom():
+        raise se.SankeyError("catalog unavailable")
+
+    monkeypatch.setattr(se, "tables_payload", _boom)
+    handler = _FakeHandler()
+    handled = routes.handle_get(
+        handler, urlparse("/api/plugins/sankey-explorer/tables"))
+    assert handled is True
+    assert handler.status == 400
