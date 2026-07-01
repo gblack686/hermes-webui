@@ -28,6 +28,10 @@ class _FakeHandler:
         self.response_headers = []
         self.wfile = io.BytesIO()
         self.rfile = io.BytesIO()
+        # Request headers dict — auth.parse_cookie(handler) does
+        # handler.headers.get('Cookie'); without this the route crashes with
+        # AttributeError whenever auth is enabled (e.g. state leaked in-suite).
+        self.headers = {}
 
     def send_response(self, status):
         self.status = status
@@ -78,6 +82,15 @@ def test_excluded_table_and_column_patterns_preserved():
     # job_name / status remain chartable (token match, not substring).
     assert not se._is_excluded_column("job_name")
     assert not se._is_excluded_column("status")
+
+
+@pytest.fixture(autouse=True)
+def _sankey_auth_off(monkeypatch):
+    """These tests exercise route dispatch/logic, not auth. Force the sankey
+    auth gate open so results are deterministic regardless of global auth state
+    leaked by other tests in the full sharded suite (fixes an in-suite-only
+    AttributeError/401 flake in the route tests)."""
+    monkeypatch.setattr(routes, "_sankey_auth_ok", lambda handler: True)
 
 
 def test_synthetic_pii_table_is_filtered(monkeypatch):

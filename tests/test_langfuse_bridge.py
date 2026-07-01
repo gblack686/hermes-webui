@@ -17,7 +17,6 @@ from __future__ import annotations
 import sys
 import types
 
-import pytest
 
 from api import langfuse_bridge as lb
 
