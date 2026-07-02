@@ -163,7 +163,11 @@ def test_read_path_falls_back_to_sample_fixture(tmp_path, monkeypatch):
     monkeypatch.delenv("HERMES_CONFIG_PATH", raising=False)
     missing = tmp_path / "nope" / "config.yaml"
     monkeypatch.setattr(acs, "_resolved_config_path", lambda: missing)
-    assert acs._read_path() == SAMPLE_FIXTURE
+    # Compare resolved paths: the module's _SAMPLE_FIXTURE can carry an
+    # unresolved "tests/.." segment depending on import context, so a raw ==
+    # against the clean fixture path fails in the full suite though it's the
+    # same file.
+    assert acs._read_path().resolve() == SAMPLE_FIXTURE.resolve()
 
 
 def test_read_path_honours_missing_explicit_override(tmp_path, monkeypatch):
